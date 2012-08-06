@@ -459,3 +459,9 @@ describe 'pure_ruby' do
   let(:util){ BinUtils::PureRuby }
   class_eval(&shared_example)
 end
+
+require 'bin_utils/native_bin_utils'
+describe 'native' do
+  let(:util){ BinUtils::Native }
+  class_eval(&shared_example)
+end
