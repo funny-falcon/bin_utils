@@ -43,41 +43,20 @@ typedef unsigned long long uint64_t;
 #define LLU(x) (x##LLU)
 #endif
 
-#define GCC_VERSION_SINCE(major, minor, patchlevel) \
-   (defined(__GNUC__) && !defined(__INTEL_COMPILER) && \
-    ((__GNUC__ > (major)) ||  \
-     (__GNUC__ == (major) && __GNUC_MINOR__ > (minor)) || \
-     (__GNUC__ == (major) && __GNUC_MINOR__ == (minor) && __GNUC_PATCHLEVEL__ >= (patchlevel))))
-
-#if GCC_VERSION_SINCE(4,3,0)
-# define swap16(x) __builtin_bswap16(x)
-# define swap32(x) __builtin_bswap32(x)
-# define swap64(x) __builtin_bswap64(x)
+#if SIZEOF_LONG == 8
+#define I642NUM(v) LONG2NUM(v)
+#define U642NUM(v) ULONG2NUM(v)
+#define NUM2I64(v) NUM2LONG(v)
+#define NUM2U64(v) NUM2ULONG(v)
+#else
+#define I642NUM(v) LL2NUM(v)
+#define U642NUM(v) ULL2NUM(v)
+#define NUM2I64(v) NUM2LL(v)
+#define NUM2U64(v) NUM2ULL(v)
 #endif
 
-#ifndef swap16
-# define swap16(x)	((((x)&0xFF)<<8)	\
-			|(((x)>>8)&0xFF)
-#endif
-
-#ifndef swap32
-# define swap32(x)	((((x)&0xFF)<<24)	\
-			|(((x)>>24)&0xFF)	\
-			|(((x)&0x0000FF00)<<8)	\
-			|(((x)&0x00FF0000)>>8)	)
-#endif
-
-#ifndef swap64
-static inline FORCE_INLINE uint64_t
-swap64(uint64_t x) {
-    x = (x>>32) | (x << 32);
-    x = ((x & LLU(0xFFFF0000FFFF0000)) >> 16) |
-        ((x & LLU(0x0000FFFF0000FFFF)) << 16);
-    return ((x & LLU(0xFF00FF00FF00FF00)) >> 8) |
-           ((x & LLU(0x00FF00FF00FF00FF)) << 8);
-}
-#endif
-
+ID rshft;
+ID band;
 
 static long
 check_size(long i, long strlen, long ilen)
@@ -238,14 +217,6 @@ get_sint32_be(VALUE rstr, VALUE ri)
 {
     return (int32_t)get_int32_be(rstr, ri);
 }
-
-#if SIZEOF_LONG == 8
-#define I642NUM(v) LONG2NUM(v)
-#define U642NUM(v) ULONG2NUM(v)
-#else
-#define I642NUM(v) LL2NUM(v)
-#define U642NUM(v) ULL2NUM(v)
-#endif
 
 static int64_t
 get_int40_le(VALUE rstr, VALUE ri)
@@ -512,6 +483,21 @@ get_ber(VALUE rstr, VALUE ri)
     return parse_ber(ptr, len, &i);
 }
 
+static int64_t
+safe_int64_t(VALUE i)
+{
+    if (FIXNUM_P(i)) {
+        return NUM2I64(i);
+    }
+    else {
+        VALUE argm = UINT2NUM(0xffffffff);
+        VALUE arg32 = INT2FIX(32);
+        uint64_t i0 = NUM2I64(rb_funcall2(i, band, 1, &argm));
+        i = rb_funcall2(i, rshft, 1, &arg32);
+        return i0 + (NUM2I64(rb_funcall2(i, band, 1, &argm)) << 32);
+    }
+}
+
 static VALUE
 check_argc(int argc, VALUE *argv)
 {
@@ -521,6 +507,8 @@ check_argc(int argc, VALUE *argv)
     return argc == 2 ? argv[1] : INT2FIX(0);
 }
 
+/**** GET ****/
+/**** 32bit ***/
 static VALUE
 rb_get_int8(int argc, VALUE *argv, VALUE self)
 {
@@ -532,7 +520,6 @@ rb_get_sint8(int argc, VALUE *argv, VALUE self)
 {
     return INT2FIX(get_sint8(argv[0], check_argc(argc, argv)));
 }
-
 
 static VALUE
 rb_get_int16_le(int argc, VALUE *argv, VALUE self)
@@ -605,7 +592,9 @@ rb_get_sint32_be(int argc, VALUE *argv, VALUE self)
 {
     return INT2NUM(get_sint32_be(argv[0], check_argc(argc, argv)));
 }
+/*** 32BIT END ***/
 
+/*** 64BIT ***/
 static VALUE
 rb_get_int40_le(int argc, VALUE *argv, VALUE self)
 {
@@ -701,18 +690,1042 @@ rb_get_sint64_be(int argc, VALUE *argv, VALUE self)
 {
     return I642NUM(get_sint64_be(argv[0], check_argc(argc, argv)));
 }
+/*** 64BIT END ***/
 
 static VALUE
 rb_get_ber(int argc, VALUE *argv, VALUE self)
 {
     return U642NUM(get_ber(argv[0], check_argc(argc, argv)));
 }
+/** GET END **/
+
+/** SLICE **/
+/*** 32BIT ***/
+static VALUE
+rb_slice_int8(VALUE self, VALUE rstr)
+{
+    int32_t res = get_int8(rstr, INT2FIX(0));
+    rb_str_drop_bytes(rstr, 1);
+    return INT2FIX(res);
+}
+
+static VALUE
+rb_slice_sint8(VALUE self, VALUE rstr)
+{
+    int32_t res = get_sint8(rstr, INT2FIX(0));
+    rb_str_drop_bytes(rstr, 1);
+    return INT2FIX(res);
+}
+
+static VALUE
+rb_slice_int16_le(VALUE self, VALUE rstr)
+{
+    int32_t res = get_int16_le(rstr, INT2FIX(0));
+    rb_str_drop_bytes(rstr, 2);
+    return INT2FIX(res);
+}
+
+static VALUE
+rb_slice_sint16_le(VALUE self, VALUE rstr)
+{
+    int32_t res = get_sint16_le(rstr, INT2FIX(0));
+    rb_str_drop_bytes(rstr, 2);
+    return INT2FIX(res);
+}
+
+static VALUE
+rb_slice_int16_be(VALUE self, VALUE rstr)
+{
+    int32_t res = get_int16_be(rstr, INT2FIX(0));
+    rb_str_drop_bytes(rstr, 2);
+    return INT2FIX(res);
+}
+
+static VALUE
+rb_slice_sint16_be(VALUE self, VALUE rstr)
+{
+    int32_t res = get_sint16_be(rstr, INT2FIX(0));
+    rb_str_drop_bytes(rstr, 2);
+    return INT2FIX(res);
+}
+
+static VALUE
+rb_slice_int24_le(VALUE self, VALUE rstr)
+{
+    int32_t res = get_int24_le(rstr, INT2FIX(0));
+    rb_str_drop_bytes(rstr, 3);
+    return INT2FIX(res);
+}
+
+static VALUE
+rb_slice_sint24_le(VALUE self, VALUE rstr)
+{
+    int32_t res = get_sint24_le(rstr, INT2FIX(0));
+    rb_str_drop_bytes(rstr, 3);
+    return INT2FIX(res);
+}
+
+static VALUE
+rb_slice_int24_be(VALUE self, VALUE rstr)
+{
+    int32_t res = get_int24_be(rstr, INT2FIX(0));
+    rb_str_drop_bytes(rstr, 3);
+    return INT2FIX(res);
+}
+
+static VALUE
+rb_slice_sint24_be(VALUE self, VALUE rstr)
+{
+    int32_t res = get_sint24_be(rstr, INT2FIX(0));
+    rb_str_drop_bytes(rstr, 3);
+    return INT2FIX(res);
+}
+
+static VALUE
+rb_slice_int32_le(VALUE self, VALUE rstr)
+{
+    uint32_t res = get_int32_le(rstr, INT2FIX(0));
+    rb_str_drop_bytes(rstr, 4);
+    return UINT2NUM(res);
+}
+
+static VALUE
+rb_slice_sint32_le(VALUE self, VALUE rstr)
+{
+    int32_t res = get_sint32_le(rstr, INT2FIX(0));
+    rb_str_drop_bytes(rstr, 4);
+    return INT2NUM(res);
+}
+
+static VALUE
+rb_slice_int32_be(VALUE self, VALUE rstr)
+{
+    uint32_t res = get_int32_be(rstr, INT2FIX(0));
+    rb_str_drop_bytes(rstr, 4);
+    return UINT2NUM(res);
+}
+
+static VALUE
+rb_slice_sint32_be(VALUE self, VALUE rstr)
+{
+    int32_t res = get_sint32_be(rstr, INT2FIX(0));
+    rb_str_drop_bytes(rstr, 4);
+    return INT2NUM(res);
+}
+/*** 32BIT END ***/
+
+/*** 64BIT ***/
+static VALUE
+rb_slice_int40_le(VALUE self, VALUE rstr)
+{
+    int64_t res = get_int40_le(rstr, INT2FIX(0));
+    rb_str_drop_bytes(rstr, 5);
+    return I642NUM(res);
+}
+
+static VALUE
+rb_slice_sint40_le(VALUE self, VALUE rstr)
+{
+    int64_t res = get_sint40_le(rstr, INT2FIX(0));
+    rb_str_drop_bytes(rstr, 5);
+    return I642NUM(res);
+}
+
+static VALUE
+rb_slice_int40_be(VALUE self, VALUE rstr)
+{
+    int64_t res = get_int40_be(rstr, INT2FIX(0));
+    rb_str_drop_bytes(rstr, 5);
+    return I642NUM(res);
+}
+
+static VALUE
+rb_slice_sint40_be(VALUE self, VALUE rstr)
+{
+    int64_t res = get_sint40_be(rstr, INT2FIX(0));
+    rb_str_drop_bytes(rstr, 5);
+    return I642NUM(res);
+}
+
+static VALUE
+rb_slice_int48_le(VALUE self, VALUE rstr)
+{
+    int64_t res = get_int48_le(rstr, INT2FIX(0));
+    rb_str_drop_bytes(rstr, 6);
+    return I642NUM(res);
+}
+
+static VALUE
+rb_slice_sint48_le(VALUE self, VALUE rstr)
+{
+    int64_t res = get_sint48_le(rstr, INT2FIX(0));
+    rb_str_drop_bytes(rstr, 6);
+    return I642NUM(res);
+}
+
+static VALUE
+rb_slice_int48_be(VALUE self, VALUE rstr)
+{
+    int64_t res = get_int48_be(rstr, INT2FIX(0));
+    rb_str_drop_bytes(rstr, 6);
+    return I642NUM(res);
+}
+
+static VALUE
+rb_slice_sint48_be(VALUE self, VALUE rstr)
+{
+    int64_t res = get_sint48_be(rstr, INT2FIX(0));
+    rb_str_drop_bytes(rstr, 6);
+    return I642NUM(res);
+}
+
+static VALUE
+rb_slice_int56_le(VALUE self, VALUE rstr)
+{
+    int64_t res = get_int56_le(rstr, INT2FIX(0));
+    rb_str_drop_bytes(rstr, 7);
+    return I642NUM(res);
+}
+
+static VALUE
+rb_slice_sint56_le(VALUE self, VALUE rstr)
+{
+    int64_t res = get_sint56_le(rstr, INT2FIX(0));
+    rb_str_drop_bytes(rstr, 7);
+    return I642NUM(res);
+}
+
+static VALUE
+rb_slice_int56_be(VALUE self, VALUE rstr)
+{
+    int64_t res = get_int56_be(rstr, INT2FIX(0));
+    rb_str_drop_bytes(rstr, 7);
+    return I642NUM(res);
+}
+
+static VALUE
+rb_slice_sint56_be(VALUE self, VALUE rstr)
+{
+    int64_t res = get_sint56_be(rstr, INT2FIX(0));
+    rb_str_drop_bytes(rstr, 7);
+    return I642NUM(res);
+}
+
+static VALUE
+rb_slice_int64_le(VALUE self, VALUE rstr)
+{
+    uint64_t res = get_int64_le(rstr, INT2FIX(0));
+    rb_str_drop_bytes(rstr, 8);
+    return U642NUM(res);
+}
+
+static VALUE
+rb_slice_sint64_le(VALUE self, VALUE rstr)
+{
+    int64_t res = get_sint64_le(rstr, INT2FIX(0));
+    rb_str_drop_bytes(rstr, 8);
+    return I642NUM(res);
+}
+
+static VALUE
+rb_slice_int64_be(VALUE self, VALUE rstr)
+{
+    uint64_t res = get_int64_be(rstr, INT2FIX(0));
+    rb_str_drop_bytes(rstr, 8);
+    return U642NUM(res);
+}
+
+static VALUE
+rb_slice_sint64_be(VALUE self, VALUE rstr)
+{
+    int64_t res = get_sint64_be(rstr, INT2FIX(0));
+    rb_str_drop_bytes(rstr, 8);
+    return I642NUM(res);
+}
+/*** 64BIT END ***/
+
+static uint64_t
+slice_ber(VALUE rstr, long *i)
+{
+    long len;
+    const uint8_t *ptr;
+    StringValue(rstr);
+    len = RSTRING_LEN(rstr);
+    ptr = RSTRING_PTR(rstr);
+    return parse_ber(ptr, len, i);
+}
+
+static VALUE
+rb_slice_ber(VALUE self, VALUE rstr)
+{
+    long i = 0;
+    int64_t res = slice_ber(rstr, &i);
+    rb_str_drop_bytes(rstr, i+1);
+    return U642NUM(res);
+}
+/** SLICE END **/
+
+/** APPEND **/
+static void
+append_int8(VALUE rstr, int32_t v)
+{
+    char a[1] = {v & 255};
+    rb_str_cat(rstr, a, 1);
+}
+
+static void
+append_int16_le(VALUE rstr, int32_t v)
+{
+    char a[2] = {v & 255, (v >> 8) & 255};
+    rb_str_cat(rstr, a, 2);
+}
+
+static void
+append_int16_be(VALUE rstr, int32_t v)
+{
+    char a[2] = {(v >> 8) & 255, v & 255};
+    rb_str_cat(rstr, a, 2);
+}
+
+static void
+append_int24_le(VALUE rstr, int32_t v)
+{
+    char a[3] = {v & 255, (v >> 8) & 255, (v >> 16) & 255};
+    rb_str_cat(rstr, a, 3);
+}
+
+static void
+append_int24_be(VALUE rstr, int32_t v)
+{
+    char a[3] = {(v >> 16) & 255, (v >> 8) & 255, v & 255};
+    rb_str_cat(rstr, a, 3);
+}
+
+static void
+append_int32_le(VALUE rstr, int32_t v)
+{
+    char a[4] = {v & 255, (v >> 8) & 255, (v >> 16) & 255, (v >> 24) & 255};
+    rb_str_cat(rstr, a, 4);
+}
+
+static void
+append_int32_be(VALUE rstr, int32_t v)
+{
+    char a[4] = {(v >> 24) & 255, (v >> 16) & 255, (v >> 8) & 255, v & 255};
+    rb_str_cat(rstr, a, 4);
+}
+
+static void
+append_int40_le(VALUE rstr, int64_t v)
+{
+    char a[5] = {v & 255, (v >> 8) & 255, (v >> 16) & 255, (v >> 24) & 255,
+                 (v >> 32) & 255};
+    rb_str_cat(rstr, a, 5);
+}
+
+static void
+append_int40_be(VALUE rstr, int64_t v)
+{
+    char a[5] = {(v >> 32) & 255,
+                 (v >> 24) & 255, (v >> 16) & 255, (v >> 8) & 255, v & 255};
+    rb_str_cat(rstr, a, 5);
+}
+
+static void
+append_int48_le(VALUE rstr, int64_t v)
+{
+    char a[6] = {v & 255, (v >> 8) & 255, (v >> 16) & 255, (v >> 24) & 255,
+                 (v >> 32) & 255, (v >> 40) & 255};
+    rb_str_cat(rstr, a, 6);
+}
+
+static void
+append_int48_be(VALUE rstr, int64_t v)
+{
+    char a[6] = {(v >> 40) & 255, (v >> 32) & 255,
+                 (v >> 24) & 255, (v >> 16) & 255, (v >> 8) & 255, v & 255};
+    rb_str_cat(rstr, a, 6);
+}
+
+static void
+append_int56_le(VALUE rstr, int64_t v)
+{
+    char a[7] = {v & 255, (v >> 8) & 255, (v >> 16) & 255, (v >> 24) & 255,
+                 (v >> 32) & 255, (v >> 40) & 255, (v >> 48) & 255};
+    rb_str_cat(rstr, a, 7);
+}
+
+static void
+append_int56_be(VALUE rstr, int64_t v)
+{
+    char a[7] = {(v >> 48) & 255, (v >> 40) & 255, (v >> 32) & 255,
+                 (v >> 24) & 255, (v >> 16) & 255, (v >> 8) & 255, v & 255};
+    rb_str_cat(rstr, a, 7);
+}
+
+static void
+append_int64_le(VALUE rstr, int64_t v)
+{
+    char a[8] = {v & 255, (v >> 8) & 255, (v >> 16) & 255, (v >> 24) & 255,
+                 (v >> 32) & 255, (v >> 40) & 255, (v >> 48) & 255, (v >> 56) & 255};
+    rb_str_cat(rstr, a, 8);
+}
+
+static void
+append_int64_be(VALUE rstr, int64_t v)
+{
+    char a[8] = {(v >> 56) & 255, (v >> 48) & 255, (v >> 40) & 255, (v >> 32) & 255,
+                 (v >> 24) & 255, (v >> 16) & 255, (v >> 8) & 255, v & 255};
+    rb_str_cat(rstr, a, 8);
+}
+
+static int
+append_ber(VALUE rstr, uint64_t ber)
+{
+    int i = 10;
+    char a[12] = {128, 128, 128, 128,
+                  128, 128 ,128 ,128,
+                  128, 128, 0};
+    do {
+        a[i] += ber % 128;
+        ber /= 128;
+        i--;
+    } while (ber);
+    i++;
+    rb_str_cat(rstr, a+i, 11-i);
+    
+    return 11-i;
+}
+
+/*** 32BIT **/
+static VALUE
+rb_append_int8(VALUE self, VALUE str, VALUE i)
+{
+    append_int8(str, NUM2INT(i));
+    return str;
+}
+
+static VALUE
+rb_append_int16_le(VALUE self, VALUE str, VALUE i)
+{
+    append_int16_le(str, NUM2INT(i));
+    return str;
+}
+
+static VALUE
+rb_append_int16_be(VALUE self, VALUE str, VALUE i)
+{
+    append_int16_be(str, NUM2INT(i));
+    return str;
+}
+
+static VALUE
+rb_append_int24_le(VALUE self, VALUE str, VALUE i)
+{
+    append_int24_le(str, NUM2INT(i));
+    return str;
+}
+
+static VALUE
+rb_append_int24_be(VALUE self, VALUE str, VALUE i)
+{
+    append_int24_be(str, NUM2INT(i));
+    return str;
+}
+
+static VALUE
+rb_append_int32_le(VALUE self, VALUE str, VALUE i)
+{
+    append_int32_le(str, (int32_t)NUM2I64(i));
+    return str;
+}
+
+static VALUE
+rb_append_int32_be(VALUE self, VALUE str, VALUE i)
+{
+    append_int32_be(str, (int32_t)NUM2I64(i));
+    return str;
+}
+/*** 32BIT END ***/
+
+/*** 64BIT ***/
+static VALUE
+rb_append_int40_le(VALUE self, VALUE str, VALUE i)
+{
+    append_int40_le(str, NUM2I64(i));
+    return str;
+}
+
+static VALUE
+rb_append_int40_be(VALUE self, VALUE str, VALUE i)
+{
+    append_int40_be(str, NUM2I64(i));
+    return str;
+}
+
+static VALUE
+rb_append_int48_le(VALUE self, VALUE str, VALUE i)
+{
+    append_int48_le(str, NUM2I64(i));
+    return str;
+}
+
+static VALUE
+rb_append_int48_be(VALUE self, VALUE str, VALUE i)
+{
+    append_int48_be(str, NUM2I64(i));
+    return str;
+}
+
+static VALUE
+rb_append_int56_le(VALUE self, VALUE str, VALUE i)
+{
+    append_int56_le(str, NUM2I64(i));
+    return str;
+}
+
+static VALUE
+rb_append_int56_be(VALUE self, VALUE str, VALUE i)
+{
+    append_int56_be(str, NUM2I64(i));
+    return str;
+}
+
+static VALUE
+rb_append_int64_le(VALUE self, VALUE str, VALUE i)
+{
+    append_int64_le(str, safe_int64_t(i));
+    return str;
+}
+
+static VALUE
+rb_append_int64_be(VALUE self, VALUE str, VALUE i)
+{
+    append_int64_be(str, safe_int64_t(i));
+    return str;
+}
+/*** 64BIT END **/
+
+static VALUE
+rb_append_ber(VALUE self, VALUE str, VALUE i)
+{
+    append_ber(str, safe_int64_t(i));
+    return str;
+}
+
+/** APPEND END **/
+
+/** APPEND BERSIZE **/
+/*** 32BIT **/
+static VALUE
+rb_append_bersize_int8(VALUE self, VALUE str, VALUE i)
+{
+    char sz = 1;
+    rb_str_cat(str, &sz, 1);
+    append_int8(str, NUM2INT(i));
+    return str;
+}
+
+static VALUE
+rb_append_bersize_int16_le(VALUE self, VALUE str, VALUE i)
+{
+    char sz = 2;
+    rb_str_cat(str, &sz, 1);
+    append_int16_le(str, NUM2INT(i));
+    return str;
+}
+
+static VALUE
+rb_append_bersize_int16_be(VALUE self, VALUE str, VALUE i)
+{
+    char sz = 2;
+    rb_str_cat(str, &sz, 1);
+    append_int16_be(str, NUM2INT(i));
+    return str;
+}
+
+static VALUE
+rb_append_bersize_int24_le(VALUE self, VALUE str, VALUE i)
+{
+    char sz = 3;
+    rb_str_cat(str, &sz, 1);
+    append_int24_le(str, NUM2INT(i));
+    return str;
+}
+
+static VALUE
+rb_append_bersize_int24_be(VALUE self, VALUE str, VALUE i)
+{
+    char sz = 3;
+    rb_str_cat(str, &sz, 1);
+    append_int24_be(str, NUM2INT(i));
+    return str;
+}
+
+static VALUE
+rb_append_bersize_int32_le(VALUE self, VALUE str, VALUE i)
+{
+    char sz = 4;
+    rb_str_cat(str, &sz, 1);
+    append_int32_le(str, (int32_t)NUM2I64(i));
+    return str;
+}
+
+static VALUE
+rb_append_bersize_int32_be(VALUE self, VALUE str, VALUE i)
+{
+    char sz = 4;
+    rb_str_cat(str, &sz, 1);
+    append_int32_be(str, (int32_t)NUM2I64(i));
+    return str;
+}
+/*** 32BIT END ***/
+
+/*** 64BIT ***/
+static VALUE
+rb_append_bersize_int40_le(VALUE self, VALUE str, VALUE i)
+{
+    char sz = 5;
+    rb_str_cat(str, &sz, 1);
+    append_int40_le(str, NUM2I64(i));
+    return str;
+}
+
+static VALUE
+rb_append_bersize_int40_be(VALUE self, VALUE str, VALUE i)
+{
+    char sz = 5;
+    rb_str_cat(str, &sz, 1);
+    append_int40_be(str, NUM2I64(i));
+    return str;
+}
+
+static VALUE
+rb_append_bersize_int48_le(VALUE self, VALUE str, VALUE i)
+{
+    char sz = 6;
+    rb_str_cat(str, &sz, 1);
+    append_int48_le(str, NUM2I64(i));
+    return str;
+}
+
+static VALUE
+rb_append_bersize_int48_be(VALUE self, VALUE str, VALUE i)
+{
+    char sz = 6;
+    rb_str_cat(str, &sz, 1);
+    append_int48_be(str, NUM2I64(i));
+    return str;
+}
+
+static VALUE
+rb_append_bersize_int56_le(VALUE self, VALUE str, VALUE i)
+{
+    char sz = 7;
+    rb_str_cat(str, &sz, 1);
+    append_int56_le(str, NUM2I64(i));
+    return str;
+}
+
+static VALUE
+rb_append_bersize_int56_be(VALUE self, VALUE str, VALUE i)
+{
+    char sz = 7;
+    rb_str_cat(str, &sz, 1);
+    append_int56_be(str, NUM2I64(i));
+    return str;
+}
+
+static VALUE
+rb_append_bersize_int64_le(VALUE self, VALUE str, VALUE i)
+{
+    char sz = 8;
+    rb_str_cat(str, &sz, 1);
+    append_int64_le(str, safe_int64_t(i));
+    return str;
+}
+
+static VALUE
+rb_append_bersize_int64_be(VALUE self, VALUE str, VALUE i)
+{
+    char sz = 8;
+    rb_str_cat(str, &sz, 1);
+    append_int64_be(str, safe_int64_t(i));
+    return str;
+}
+/*** 64BIT END **/
+
+static VALUE
+rb_append_bersize_ber(VALUE self, VALUE str, VALUE i)
+{
+    char c=0;
+    int sl, bl;
+    rb_str_cat(str, &c, 1);
+    sl = RSTRING_LEN(str)-1;
+    bl = append_ber(str, safe_int64_t(i));
+    RSTRING_PTR(str)[sl] = bl;
+    return str;
+}
+
+/** APPEND BERSIZE END **/
+
+/** APPEND INT32LESIZE **/
+/*** 32BIT **/
+static VALUE
+rb_append_int32lesize_int8(VALUE self, VALUE str, VALUE i)
+{
+    char sz[4] = {1, 0, 0, 0};
+    rb_str_cat(str, sz, 4);
+    append_int8(str, NUM2INT(i));
+    return str;
+}
+
+static VALUE
+rb_append_int32lesize_int16_le(VALUE self, VALUE str, VALUE i)
+{
+    char sz[4] = {2, 0, 0, 0};
+    rb_str_cat(str, sz, 4);
+    append_int16_le(str, NUM2INT(i));
+    return str;
+}
+
+static VALUE
+rb_append_int32lesize_int16_be(VALUE self, VALUE str, VALUE i)
+{
+    char sz[4] = {2, 0, 0, 0};
+    rb_str_cat(str, sz, 4);
+    append_int16_be(str, NUM2INT(i));
+    return str;
+}
+
+static VALUE
+rb_append_int32lesize_int24_le(VALUE self, VALUE str, VALUE i)
+{
+    char sz[4] = {3, 0, 0, 0};
+    rb_str_cat(str, sz, 4);
+    append_int24_le(str, NUM2INT(i));
+    return str;
+}
+
+static VALUE
+rb_append_int32lesize_int24_be(VALUE self, VALUE str, VALUE i)
+{
+    char sz[4] = {3, 0, 0, 0};
+    rb_str_cat(str, sz, 4);
+    append_int24_be(str, NUM2INT(i));
+    return str;
+}
+
+static VALUE
+rb_append_int32lesize_int32_le(VALUE self, VALUE str, VALUE i)
+{
+    char sz[4] = {4, 0, 0, 0};
+    rb_str_cat(str, sz, 4);
+    append_int32_le(str, (int32_t)NUM2I64(i));
+    return str;
+}
+
+static VALUE
+rb_append_int32lesize_int32_be(VALUE self, VALUE str, VALUE i)
+{
+    char sz[4] = {4, 0, 0, 0};
+    rb_str_cat(str, sz, 4);
+    append_int32_be(str, (int32_t)NUM2I64(i));
+    return str;
+}
+/*** 32BIT END ***/
+
+/*** 64BIT ***/
+static VALUE
+rb_append_int32lesize_int40_le(VALUE self, VALUE str, VALUE i)
+{
+    char sz[4] = {5, 0, 0, 0};
+    rb_str_cat(str, sz, 4);
+    append_int40_le(str, NUM2I64(i));
+    return str;
+}
+
+static VALUE
+rb_append_int32lesize_int40_be(VALUE self, VALUE str, VALUE i)
+{
+    char sz[4] = {5, 0, 0, 0};
+    rb_str_cat(str, sz, 4);
+    append_int40_be(str, NUM2I64(i));
+    return str;
+}
+
+static VALUE
+rb_append_int32lesize_int48_le(VALUE self, VALUE str, VALUE i)
+{
+    char sz[4] = {6, 0, 0, 0};
+    rb_str_cat(str, sz, 4);
+    append_int48_le(str, NUM2I64(i));
+    return str;
+}
+
+static VALUE
+rb_append_int32lesize_int48_be(VALUE self, VALUE str, VALUE i)
+{
+    char sz[4] = {6, 0, 0, 0};
+    rb_str_cat(str, sz, 4);
+    append_int48_be(str, NUM2I64(i));
+    return str;
+}
+
+static VALUE
+rb_append_int32lesize_int56_le(VALUE self, VALUE str, VALUE i)
+{
+    char sz[4] = {7, 0, 0, 0};
+    rb_str_cat(str, sz, 4);
+    append_int56_le(str, NUM2I64(i));
+    return str;
+}
+
+static VALUE
+rb_append_int32lesize_int56_be(VALUE self, VALUE str, VALUE i)
+{
+    char sz[4] = {7, 0, 0, 0};
+    rb_str_cat(str, sz, 4);
+    append_int56_be(str, NUM2I64(i));
+    return str;
+}
+
+static VALUE
+rb_append_int32lesize_int64_le(VALUE self, VALUE str, VALUE i)
+{
+    char sz[4] = {8, 0, 0, 0};
+    rb_str_cat(str, sz, 4);
+    append_int64_le(str, safe_int64_t(i));
+    return str;
+}
+
+static VALUE
+rb_append_int32lesize_int64_be(VALUE self, VALUE str, VALUE i)
+{
+    char sz[4] = {8, 0, 0, 0};
+    rb_str_cat(str, sz, 4);
+    append_int64_be(str, safe_int64_t(i));
+    return str;
+}
+/*** 64BIT END **/
+
+static VALUE
+rb_append_int32lesize_ber(VALUE self, VALUE str, VALUE i)
+{
+    char sz[4] = {0,0,0,0};
+    int sl, bl;
+    rb_str_cat(str, sz, 4);
+    sl = RSTRING_LEN(str)-4;
+    bl = append_ber(str, safe_int64_t(i));
+    RSTRING_PTR(str)[sl] = bl;
+    return str;
+}
+
+/** APPEND INT32LESIZE END **/
+
+/** APPEND INT32BESIZE **/
+/*** 32BIT **/
+static VALUE
+rb_append_int32besize_int8(VALUE self, VALUE str, VALUE i)
+{
+    char sz[4] = {0, 0, 0, 1};
+    rb_str_cat(str, sz, 4);
+    append_int8(str, NUM2INT(i));
+    return str;
+}
+
+static VALUE
+rb_append_int32besize_int16_le(VALUE self, VALUE str, VALUE i)
+{
+    char sz[4] = {0, 0, 0, 2};
+    rb_str_cat(str, sz, 4);
+    append_int16_le(str, NUM2INT(i));
+    return str;
+}
+
+static VALUE
+rb_append_int32besize_int16_be(VALUE self, VALUE str, VALUE i)
+{
+    char sz[4] = {0, 0, 0, 2};
+    rb_str_cat(str, sz, 4);
+    append_int16_be(str, NUM2INT(i));
+    return str;
+}
+
+static VALUE
+rb_append_int32besize_int24_le(VALUE self, VALUE str, VALUE i)
+{
+    char sz[4] = {0, 0, 0, 3};
+    rb_str_cat(str, sz, 4);
+    append_int24_le(str, NUM2INT(i));
+    return str;
+}
+
+static VALUE
+rb_append_int32besize_int24_be(VALUE self, VALUE str, VALUE i)
+{
+    char sz[4] = {0, 0, 0, 3};
+    rb_str_cat(str, sz, 4);
+    append_int24_be(str, NUM2INT(i));
+    return str;
+}
+
+static VALUE
+rb_append_int32besize_int32_le(VALUE self, VALUE str, VALUE i)
+{
+    char sz[4] = {0, 0, 0, 4};
+    rb_str_cat(str, sz, 4);
+    append_int32_le(str, (int32_t)NUM2I64(i));
+    return str;
+}
+
+static VALUE
+rb_append_int32besize_int32_be(VALUE self, VALUE str, VALUE i)
+{
+    char sz[4] = {0, 0, 0, 4};
+    rb_str_cat(str, sz, 4);
+    append_int32_be(str, (int32_t)NUM2I64(i));
+    return str;
+}
+/*** 32BIT END ***/
+
+/*** 64BIT ***/
+static VALUE
+rb_append_int32besize_int40_le(VALUE self, VALUE str, VALUE i)
+{
+    char sz[4] = {0, 0, 0, 5};
+    rb_str_cat(str, sz, 4);
+    append_int40_le(str, NUM2I64(i));
+    return str;
+}
+
+static VALUE
+rb_append_int32besize_int40_be(VALUE self, VALUE str, VALUE i)
+{
+    char sz[4] = {0, 0, 0, 5};
+    rb_str_cat(str, sz, 4);
+    append_int40_be(str, NUM2I64(i));
+    return str;
+}
+
+static VALUE
+rb_append_int32besize_int48_le(VALUE self, VALUE str, VALUE i)
+{
+    char sz[4] = {0, 0, 0, 6};
+    rb_str_cat(str, sz, 4);
+    append_int48_le(str, NUM2I64(i));
+    return str;
+}
+
+static VALUE
+rb_append_int32besize_int48_be(VALUE self, VALUE str, VALUE i)
+{
+    char sz[4] = {0, 0, 0, 6};
+    rb_str_cat(str, sz, 4);
+    append_int48_be(str, NUM2I64(i));
+    return str;
+}
+
+static VALUE
+rb_append_int32besize_int56_le(VALUE self, VALUE str, VALUE i)
+{
+    char sz[4] = {0, 0, 0, 7};
+    rb_str_cat(str, sz, 4);
+    append_int56_le(str, NUM2I64(i));
+    return str;
+}
+
+static VALUE
+rb_append_int32besize_int56_be(VALUE self, VALUE str, VALUE i)
+{
+    char sz[4] = {0, 0, 0, 7};
+    rb_str_cat(str, sz, 4);
+    append_int56_be(str, NUM2I64(i));
+    return str;
+}
+
+static VALUE
+rb_append_int32besize_int64_le(VALUE self, VALUE str, VALUE i)
+{
+    char sz[4] = {0, 0, 0, 8};
+    rb_str_cat(str, sz, 4);
+    append_int64_le(str, safe_int64_t(i));
+    return str;
+}
+
+static VALUE
+rb_append_int32besize_int64_be(VALUE self, VALUE str, VALUE i)
+{
+    char sz[4] = {0, 0, 0, 8};
+    rb_str_cat(str, sz, 4);
+    append_int64_be(str, safe_int64_t(i));
+    return str;
+}
+/*** 64BIT END **/
+
+static VALUE
+rb_append_int32besize_ber(VALUE self, VALUE str, VALUE i)
+{
+    char sz[4] = {0,0,0,0};
+    int sl, bl;
+    rb_str_cat(str, sz, 4);
+    sl = RSTRING_LEN(str)-1;
+    bl = append_ber(str, safe_int64_t(i));
+    RSTRING_PTR(str)[sl] = bl;
+    return str;
+}
+
+/** APPEND INT32BESIZE END **/
+
+/** APPEND STRING **/
+static VALUE
+rb_append_string(VALUE self, VALUE str, VALUE add)
+{
+    StringValue(add);
+    rb_str_cat(str, RSTRING_PTR(add), RSTRING_LEN(add));
+    RB_GC_GUARD(add);
+    return str;
+}
+
+static VALUE
+rb_append_bersize_string(VALUE self, VALUE str, VALUE add)
+{
+    StringValue(add);
+    append_ber(str, RSTRING_LEN(add));
+    rb_str_cat(str, RSTRING_PTR(add), RSTRING_LEN(add));
+    RB_GC_GUARD(add);
+    return str;
+}
+
+static VALUE
+rb_append_int32lesize_string(VALUE self, VALUE str, VALUE add)
+{
+    StringValue(add);
+    append_int32_le(str, RSTRING_LEN(add));
+    rb_str_cat(str, RSTRING_PTR(add), RSTRING_LEN(add));
+    RB_GC_GUARD(add);
+    return str;
+}
+
+static VALUE
+rb_append_int32besize_string(VALUE self, VALUE str, VALUE add)
+{
+    StringValue(add);
+    append_int32_be(str, RSTRING_LEN(add));
+    rb_str_cat(str, RSTRING_PTR(add), RSTRING_LEN(add));
+    RB_GC_GUARD(add);
+    return str;
+}
+
+/** APPEND STRING END **/
 
 void
 Init_native_bin_utils()
 {
     VALUE mod_bin_utils = rb_define_module("BinUtils");
     VALUE mod_native = rb_define_module_under(mod_bin_utils, "Native");
+    CONST_ID(rshft, ">>");
+    CONST_ID(band, "&");
 
     rb_define_method(mod_native, "get_ber", rb_get_ber, -1);
     rb_define_method(mod_native, "get_int8", rb_get_int8, -1);
@@ -745,5 +1758,171 @@ Init_native_bin_utils()
     rb_define_method(mod_native, "get_sint64_le", rb_get_sint64_le, -1);
     rb_define_method(mod_native, "get_int64_be", rb_get_int64_be, -1);
     rb_define_method(mod_native, "get_sint64_be", rb_get_sint64_be, -1);
+
+    rb_define_method(mod_native, "slice_ber!", rb_slice_ber, 1);
+    rb_define_method(mod_native, "slice_int8!", rb_slice_int8, 1);
+    rb_define_method(mod_native, "slice_sint8!", rb_slice_sint8, 1);
+    rb_define_method(mod_native, "slice_int16_le!", rb_slice_int16_le, 1);
+    rb_define_method(mod_native, "slice_sint16_le!", rb_slice_sint16_le, 1);
+    rb_define_method(mod_native, "slice_int16_be!", rb_slice_int16_be, 1);
+    rb_define_method(mod_native, "slice_sint16_be!", rb_slice_sint16_be, 1);
+    rb_define_method(mod_native, "slice_int24_le!", rb_slice_int24_le, 1);
+    rb_define_method(mod_native, "slice_sint24_le!", rb_slice_sint24_le, 1);
+    rb_define_method(mod_native, "slice_int24_be!", rb_slice_int24_be, 1);
+    rb_define_method(mod_native, "slice_sint24_be!", rb_slice_sint24_be, 1);
+    rb_define_method(mod_native, "slice_int32_le!", rb_slice_int32_le, 1);
+    rb_define_method(mod_native, "slice_sint32_le!", rb_slice_sint32_le, 1);
+    rb_define_method(mod_native, "slice_int32_be!", rb_slice_int32_be, 1);
+    rb_define_method(mod_native, "slice_sint32_be!", rb_slice_sint32_be, 1);
+    rb_define_method(mod_native, "slice_int40_le!", rb_slice_int40_le, 1);
+    rb_define_method(mod_native, "slice_sint40_le!", rb_slice_sint40_le, 1);
+    rb_define_method(mod_native, "slice_int40_be!", rb_slice_int40_be, 1);
+    rb_define_method(mod_native, "slice_sint40_be!", rb_slice_sint40_be, 1);
+    rb_define_method(mod_native, "slice_int48_le!", rb_slice_int48_le, 1);
+    rb_define_method(mod_native, "slice_sint48_le!", rb_slice_sint48_le, 1);
+    rb_define_method(mod_native, "slice_int48_be!", rb_slice_int48_be, 1);
+    rb_define_method(mod_native, "slice_sint48_be!", rb_slice_sint48_be, 1);
+    rb_define_method(mod_native, "slice_int56_le!", rb_slice_int56_le, 1);
+    rb_define_method(mod_native, "slice_sint56_le!", rb_slice_sint56_le, 1);
+    rb_define_method(mod_native, "slice_int56_be!", rb_slice_int56_be, 1);
+    rb_define_method(mod_native, "slice_sint56_be!", rb_slice_sint56_be, 1);
+    rb_define_method(mod_native, "slice_int64_le!", rb_slice_int64_le, 1);
+    rb_define_method(mod_native, "slice_sint64_le!", rb_slice_sint64_le, 1);
+    rb_define_method(mod_native, "slice_int64_be!", rb_slice_int64_be, 1);
+    rb_define_method(mod_native, "slice_sint64_be!", rb_slice_sint64_be, 1);
+
+    rb_define_method(mod_native, "append_ber!", rb_append_ber, 2);
+    rb_define_method(mod_native, "append_int8!", rb_append_int8, 2);
+    rb_define_method(mod_native, "append_sint8!", rb_append_int8, 2);
+    rb_define_method(mod_native, "append_int16_le!", rb_append_int16_le, 2);
+    rb_define_method(mod_native, "append_sint16_le!", rb_append_int16_le, 2);
+    rb_define_method(mod_native, "append_int16_be!", rb_append_int16_be, 2);
+    rb_define_method(mod_native, "append_sint16_be!", rb_append_int16_be, 2);
+    rb_define_method(mod_native, "append_int24_le!", rb_append_int24_le, 2);
+    rb_define_method(mod_native, "append_sint24_le!", rb_append_int24_le, 2);
+    rb_define_method(mod_native, "append_int24_be!", rb_append_int24_be, 2);
+    rb_define_method(mod_native, "append_sint24_be!", rb_append_int24_be, 2);
+    rb_define_method(mod_native, "append_int32_le!", rb_append_int32_le, 2);
+    rb_define_method(mod_native, "append_sint32_le!", rb_append_int32_le, 2);
+    rb_define_method(mod_native, "append_int32_be!", rb_append_int32_be, 2);
+    rb_define_method(mod_native, "append_sint32_be!", rb_append_int32_be, 2);
+    rb_define_method(mod_native, "append_int40_le!", rb_append_int40_le, 2);
+    rb_define_method(mod_native, "append_sint40_le!", rb_append_int40_le, 2);
+    rb_define_method(mod_native, "append_int40_be!", rb_append_int40_be, 2);
+    rb_define_method(mod_native, "append_sint40_be!", rb_append_int40_be, 2);
+    rb_define_method(mod_native, "append_int48_le!", rb_append_int48_le, 2);
+    rb_define_method(mod_native, "append_sint48_le!", rb_append_int48_le, 2);
+    rb_define_method(mod_native, "append_int48_be!", rb_append_int48_be, 2);
+    rb_define_method(mod_native, "append_sint48_be!", rb_append_int48_be, 2);
+    rb_define_method(mod_native, "append_int56_le!", rb_append_int56_le, 2);
+    rb_define_method(mod_native, "append_sint56_le!", rb_append_int56_le, 2);
+    rb_define_method(mod_native, "append_int56_be!", rb_append_int56_be, 2);
+    rb_define_method(mod_native, "append_sint56_be!", rb_append_int56_be, 2);
+    rb_define_method(mod_native, "append_int64_le!", rb_append_int64_le, 2);
+    rb_define_method(mod_native, "append_sint64_le!", rb_append_int64_le, 2);
+    rb_define_method(mod_native, "append_int64_be!", rb_append_int64_be, 2);
+    rb_define_method(mod_native, "append_sint64_be!", rb_append_int64_be, 2);
+
+    rb_define_method(mod_native, "append_bersize_ber!", rb_append_bersize_ber, 2);
+    rb_define_method(mod_native, "append_bersize_int8!", rb_append_bersize_int8, 2);
+    rb_define_method(mod_native, "append_bersize_sint8!", rb_append_bersize_int8, 2);
+    rb_define_method(mod_native, "append_bersize_int16_le!", rb_append_bersize_int16_le, 2);
+    rb_define_method(mod_native, "append_bersize_sint16_le!", rb_append_bersize_int16_le, 2);
+    rb_define_method(mod_native, "append_bersize_int16_be!", rb_append_bersize_int16_be, 2);
+    rb_define_method(mod_native, "append_bersize_sint16_be!", rb_append_bersize_int16_be, 2);
+    rb_define_method(mod_native, "append_bersize_int24_le!", rb_append_bersize_int24_le, 2);
+    rb_define_method(mod_native, "append_bersize_sint24_le!", rb_append_bersize_int24_le, 2);
+    rb_define_method(mod_native, "append_bersize_int24_be!", rb_append_bersize_int24_be, 2);
+    rb_define_method(mod_native, "append_bersize_sint24_be!", rb_append_bersize_int24_be, 2);
+    rb_define_method(mod_native, "append_bersize_int32_le!", rb_append_bersize_int32_le, 2);
+    rb_define_method(mod_native, "append_bersize_sint32_le!", rb_append_bersize_int32_le, 2);
+    rb_define_method(mod_native, "append_bersize_int32_be!", rb_append_bersize_int32_be, 2);
+    rb_define_method(mod_native, "append_bersize_sint32_be!", rb_append_bersize_int32_be, 2);
+    rb_define_method(mod_native, "append_bersize_int40_le!", rb_append_bersize_int40_le, 2);
+    rb_define_method(mod_native, "append_bersize_sint40_le!", rb_append_bersize_int40_le, 2);
+    rb_define_method(mod_native, "append_bersize_int40_be!", rb_append_bersize_int40_be, 2);
+    rb_define_method(mod_native, "append_bersize_sint40_be!", rb_append_bersize_int40_be, 2);
+    rb_define_method(mod_native, "append_bersize_int48_le!", rb_append_bersize_int48_le, 2);
+    rb_define_method(mod_native, "append_bersize_sint48_le!", rb_append_bersize_int48_le, 2);
+    rb_define_method(mod_native, "append_bersize_int48_be!", rb_append_bersize_int48_be, 2);
+    rb_define_method(mod_native, "append_bersize_sint48_be!", rb_append_bersize_int48_be, 2);
+    rb_define_method(mod_native, "append_bersize_int56_le!", rb_append_bersize_int56_le, 2);
+    rb_define_method(mod_native, "append_bersize_sint56_le!", rb_append_bersize_int56_le, 2);
+    rb_define_method(mod_native, "append_bersize_int56_be!", rb_append_bersize_int56_be, 2);
+    rb_define_method(mod_native, "append_bersize_sint56_be!", rb_append_bersize_int56_be, 2);
+    rb_define_method(mod_native, "append_bersize_int64_le!", rb_append_bersize_int64_le, 2);
+    rb_define_method(mod_native, "append_bersize_sint64_le!", rb_append_bersize_int64_le, 2);
+    rb_define_method(mod_native, "append_bersize_int64_be!", rb_append_bersize_int64_be, 2);
+    rb_define_method(mod_native, "append_bersize_sint64_be!", rb_append_bersize_int64_be, 2);
+
+    rb_define_method(mod_native, "append_int32lesize_ber!", rb_append_int32lesize_ber, 2);
+    rb_define_method(mod_native, "append_int32lesize_int8!", rb_append_int32lesize_int8, 2);
+    rb_define_method(mod_native, "append_int32lesize_sint8!", rb_append_int32lesize_int8, 2);
+    rb_define_method(mod_native, "append_int32lesize_int16_le!", rb_append_int32lesize_int16_le, 2);
+    rb_define_method(mod_native, "append_int32lesize_sint16_le!", rb_append_int32lesize_int16_le, 2);
+    rb_define_method(mod_native, "append_int32lesize_int16_be!", rb_append_int32lesize_int16_be, 2);
+    rb_define_method(mod_native, "append_int32lesize_sint16_be!", rb_append_int32lesize_int16_be, 2);
+    rb_define_method(mod_native, "append_int32lesize_int24_le!", rb_append_int32lesize_int24_le, 2);
+    rb_define_method(mod_native, "append_int32lesize_sint24_le!", rb_append_int32lesize_int24_le, 2);
+    rb_define_method(mod_native, "append_int32lesize_int24_be!", rb_append_int32lesize_int24_be, 2);
+    rb_define_method(mod_native, "append_int32lesize_sint24_be!", rb_append_int32lesize_int24_be, 2);
+    rb_define_method(mod_native, "append_int32lesize_int32_le!", rb_append_int32lesize_int32_le, 2);
+    rb_define_method(mod_native, "append_int32lesize_sint32_le!", rb_append_int32lesize_int32_le, 2);
+    rb_define_method(mod_native, "append_int32lesize_int32_be!", rb_append_int32lesize_int32_be, 2);
+    rb_define_method(mod_native, "append_int32lesize_sint32_be!", rb_append_int32lesize_int32_be, 2);
+    rb_define_method(mod_native, "append_int32lesize_int40_le!", rb_append_int32lesize_int40_le, 2);
+    rb_define_method(mod_native, "append_int32lesize_sint40_le!", rb_append_int32lesize_int40_le, 2);
+    rb_define_method(mod_native, "append_int32lesize_int40_be!", rb_append_int32lesize_int40_be, 2);
+    rb_define_method(mod_native, "append_int32lesize_sint40_be!", rb_append_int32lesize_int40_be, 2);
+    rb_define_method(mod_native, "append_int32lesize_int48_le!", rb_append_int32lesize_int48_le, 2);
+    rb_define_method(mod_native, "append_int32lesize_sint48_le!", rb_append_int32lesize_int48_le, 2);
+    rb_define_method(mod_native, "append_int32lesize_int48_be!", rb_append_int32lesize_int48_be, 2);
+    rb_define_method(mod_native, "append_int32lesize_sint48_be!", rb_append_int32lesize_int48_be, 2);
+    rb_define_method(mod_native, "append_int32lesize_int56_le!", rb_append_int32lesize_int56_le, 2);
+    rb_define_method(mod_native, "append_int32lesize_sint56_le!", rb_append_int32lesize_int56_le, 2);
+    rb_define_method(mod_native, "append_int32lesize_int56_be!", rb_append_int32lesize_int56_be, 2);
+    rb_define_method(mod_native, "append_int32lesize_sint56_be!", rb_append_int32lesize_int56_be, 2);
+    rb_define_method(mod_native, "append_int32lesize_int64_le!", rb_append_int32lesize_int64_le, 2);
+    rb_define_method(mod_native, "append_int32lesize_sint64_le!", rb_append_int32lesize_int64_le, 2);
+    rb_define_method(mod_native, "append_int32lesize_int64_be!", rb_append_int32lesize_int64_be, 2);
+    rb_define_method(mod_native, "append_int32lesize_sint64_be!", rb_append_int32lesize_int64_be, 2);
+
+    rb_define_method(mod_native, "append_int32besize_ber!", rb_append_int32besize_ber, 2);
+    rb_define_method(mod_native, "append_int32besize_int8!", rb_append_int32besize_int8, 2);
+    rb_define_method(mod_native, "append_int32besize_sint8!", rb_append_int32besize_int8, 2);
+    rb_define_method(mod_native, "append_int32besize_int16_le!", rb_append_int32besize_int16_le, 2);
+    rb_define_method(mod_native, "append_int32besize_sint16_le!", rb_append_int32besize_int16_le, 2);
+    rb_define_method(mod_native, "append_int32besize_int16_be!", rb_append_int32besize_int16_be, 2);
+    rb_define_method(mod_native, "append_int32besize_sint16_be!", rb_append_int32besize_int16_be, 2);
+    rb_define_method(mod_native, "append_int32besize_int24_le!", rb_append_int32besize_int24_le, 2);
+    rb_define_method(mod_native, "append_int32besize_sint24_le!", rb_append_int32besize_int24_le, 2);
+    rb_define_method(mod_native, "append_int32besize_int24_be!", rb_append_int32besize_int24_be, 2);
+    rb_define_method(mod_native, "append_int32besize_sint24_be!", rb_append_int32besize_int24_be, 2);
+    rb_define_method(mod_native, "append_int32besize_int32_le!", rb_append_int32besize_int32_le, 2);
+    rb_define_method(mod_native, "append_int32besize_sint32_le!", rb_append_int32besize_int32_le, 2);
+    rb_define_method(mod_native, "append_int32besize_int32_be!", rb_append_int32besize_int32_be, 2);
+    rb_define_method(mod_native, "append_int32besize_sint32_be!", rb_append_int32besize_int32_be, 2);
+    rb_define_method(mod_native, "append_int32besize_int40_le!", rb_append_int32besize_int40_le, 2);
+    rb_define_method(mod_native, "append_int32besize_sint40_le!", rb_append_int32besize_int40_le, 2);
+    rb_define_method(mod_native, "append_int32besize_int40_be!", rb_append_int32besize_int40_be, 2);
+    rb_define_method(mod_native, "append_int32besize_sint40_be!", rb_append_int32besize_int40_be, 2);
+    rb_define_method(mod_native, "append_int32besize_int48_le!", rb_append_int32besize_int48_le, 2);
+    rb_define_method(mod_native, "append_int32besize_sint48_le!", rb_append_int32besize_int48_le, 2);
+    rb_define_method(mod_native, "append_int32besize_int48_be!", rb_append_int32besize_int48_be, 2);
+    rb_define_method(mod_native, "append_int32besize_sint48_be!", rb_append_int32besize_int48_be, 2);
+    rb_define_method(mod_native, "append_int32besize_int56_le!", rb_append_int32besize_int56_le, 2);
+    rb_define_method(mod_native, "append_int32besize_sint56_le!", rb_append_int32besize_int56_le, 2);
+    rb_define_method(mod_native, "append_int32besize_int56_be!", rb_append_int32besize_int56_be, 2);
+    rb_define_method(mod_native, "append_int32besize_sint56_be!", rb_append_int32besize_int56_be, 2);
+    rb_define_method(mod_native, "append_int32besize_int64_le!", rb_append_int32besize_int64_le, 2);
+    rb_define_method(mod_native, "append_int32besize_sint64_le!", rb_append_int32besize_int64_le, 2);
+    rb_define_method(mod_native, "append_int32besize_int64_be!", rb_append_int32besize_int64_be, 2);
+    rb_define_method(mod_native, "append_int32besize_sint64_be!", rb_append_int32besize_int64_be, 2);
+
+    rb_define_method(mod_native, "append_string!", rb_append_string, 2);
+    rb_define_method(mod_native, "append_bersize_string!", rb_append_bersize_string, 2);
+    rb_define_method(mod_native, "append_int32lesize_string!", rb_append_int32lesize_string, 2);
+    rb_define_method(mod_native, "append_int32besize_string!", rb_append_int32besize_string, 2);
+
     rb_extend_object(mod_native, mod_native);
 }

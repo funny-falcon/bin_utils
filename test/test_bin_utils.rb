@@ -448,9 +448,93 @@ shared_example = proc do
     d = dest; util.append_int32lesize_ber!(d, 243088006); d.must_equal "\x01\x02\x04\x00\x00\x00\xf3\xf4\xf5\x06".force_encoding('binary')
   end
 
+  it "must append int32besize and integer" do
+    d = dest; util.append_int32besize_int8!(d, 0x03); d.must_equal "\x01\x02\x00\x00\x00\x01\x03"
+    d = dest; util.append_int32besize_int8!(d, 0xf3); d.must_equal "\x01\x02\x00\x00\x00\x01\xf3".force_encoding('binary')
+    d = dest; util.append_int32besize_sint8!(d, 0x03); d.must_equal "\x01\x02\x00\x00\x00\x01\x03"
+    d = dest; util.append_int32besize_sint8!(d, -13); d.must_equal "\x01\x02\x00\x00\x00\x01\xf3".force_encoding('binary')
+
+    d = dest; util.append_int32besize_int16_le!(d, 0x0403); d.must_equal "\x01\x02\x00\x00\x00\x02\x03\x04"
+    d = dest; util.append_int32besize_int16_le!(d, 0xf4f3); d.must_equal "\x01\x02\x00\x00\x00\x02\xf3\xf4".force_encoding('binary')
+    d = dest; util.append_int32besize_sint16_le!(d, 0x0403); d.must_equal "\x01\x02\x00\x00\x00\x02\x03\x04"
+    d = dest; util.append_int32besize_sint16_le!(d, -2829); d.must_equal "\x01\x02\x00\x00\x00\x02\xf3\xf4".force_encoding('binary')
+
+    d = dest; util.append_int32besize_int16_be!(d, 0x0304); d.must_equal "\x01\x02\x00\x00\x00\x02\x03\x04"
+    d = dest; util.append_int32besize_int16_be!(d, 0xf3f4); d.must_equal "\x01\x02\x00\x00\x00\x02\xf3\xf4".force_encoding('binary')
+    d = dest; util.append_int32besize_sint16_be!(d, 0x0304); d.must_equal "\x01\x02\x00\x00\x00\x02\x03\x04"
+    d = dest; util.append_int32besize_sint16_be!(d, -3084); d.must_equal "\x01\x02\x00\x00\x00\x02\xf3\xf4".force_encoding('binary')
+
+    d = dest; util.append_int32besize_int24_le!(d, 0x050403); d.must_equal "\x01\x02\x00\x00\x00\x03\x03\x04\x05"
+    d = dest; util.append_int32besize_int24_le!(d, 0xf5f4f3); d.must_equal "\x01\x02\x00\x00\x00\x03\xf3\xf4\xf5".force_encoding('binary')
+    d = dest; util.append_int32besize_sint24_le!(d, 0x050403); d.must_equal "\x01\x02\x00\x00\x00\x03\x03\x04\x05"
+    d = dest; util.append_int32besize_sint24_le!(d, -658189); d.must_equal "\x01\x02\x00\x00\x00\x03\xf3\xf4\xf5".force_encoding('binary')
+
+    d = dest; util.append_int32besize_int24_be!(d, 0x030405); d.must_equal "\x01\x02\x00\x00\x00\x03\x03\x04\x05"
+    d = dest; util.append_int32besize_int24_be!(d, 0xf3f4f5); d.must_equal "\x01\x02\x00\x00\x00\x03\xf3\xf4\xf5".force_encoding('binary')
+    d = dest; util.append_int32besize_sint24_be!(d, 0x030405); d.must_equal "\x01\x02\x00\x00\x00\x03\x03\x04\x05"
+    d = dest; util.append_int32besize_sint24_be!(d, -789259); d.must_equal "\x01\x02\x00\x00\x00\x03\xf3\xf4\xf5".force_encoding('binary')
+
+    d = dest; util.append_int32besize_int32_le!(d, 0x06050403); d.must_equal "\x01\x02\x00\x00\x00\x04\x03\x04\x05\x06"
+    d = dest; util.append_int32besize_int32_le!(d, 0xf6f5f4f3); d.must_equal "\x01\x02\x00\x00\x00\x04\xf3\xf4\xf5\xf6".force_encoding('binary')
+    d = dest; util.append_int32besize_sint32_le!(d, 0x06050403); d.must_equal "\x01\x02\x00\x00\x00\x04\x03\x04\x05\x06"
+    d = dest; util.append_int32besize_sint32_le!(d, -151653133); d.must_equal "\x01\x02\x00\x00\x00\x04\xf3\xf4\xf5\xf6".force_encoding('binary')
+
+    d = dest; util.append_int32besize_int32_be!(d, 0x03040506); d.must_equal "\x01\x02\x00\x00\x00\x04\x03\x04\x05\x06"
+    d = dest; util.append_int32besize_int32_be!(d, 0xf3f4f5f6); d.must_equal "\x01\x02\x00\x00\x00\x04\xf3\xf4\xf5\xf6".force_encoding('binary')
+    d = dest; util.append_int32besize_sint32_be!(d, 0x03040506); d.must_equal "\x01\x02\x00\x00\x00\x04\x03\x04\x05\x06"
+    d = dest; util.append_int32besize_sint32_be!(d, -202050058); d.must_equal "\x01\x02\x00\x00\x00\x04\xf3\xf4\xf5\xf6".force_encoding('binary')
+
+    d = dest; util.append_int32besize_int40_le!(d, 0x0706050403); d.must_equal "\x01\x02\x00\x00\x00\x05\x03\x04\x05\x06\x07"
+    d = dest; util.append_int32besize_int40_le!(d, 0xf7f6f5f4f3); d.must_equal "\x01\x02\x00\x00\x00\x05\xf3\xf4\xf5\xf6\xf7".force_encoding('binary')
+    d = dest; util.append_int32besize_sint40_le!(d, 0x0706050403); d.must_equal "\x01\x02\x00\x00\x00\x05\x03\x04\x05\x06\x07"
+    d = dest; util.append_int32besize_sint40_le!(d, -34511391501); d.must_equal "\x01\x02\x00\x00\x00\x05\xf3\xf4\xf5\xf6\xf7".force_encoding('binary')
+
+    d = dest; util.append_int32besize_int40_be!(d, 0x0304050607); d.must_equal "\x01\x02\x00\x00\x00\x05\x03\x04\x05\x06\x07"
+    d = dest; util.append_int32besize_int40_be!(d, 0xf3f4f5f6f7); d.must_equal "\x01\x02\x00\x00\x00\x05\xf3\xf4\xf5\xf6\xf7".force_encoding('binary')
+    d = dest; util.append_int32besize_sint40_be!(d, 0x0304050607); d.must_equal "\x01\x02\x00\x00\x00\x05\x03\x04\x05\x06\x07"
+    d = dest; util.append_int32besize_sint40_be!(d, -51724814601); d.must_equal "\x01\x02\x00\x00\x00\x05\xf3\xf4\xf5\xf6\xf7".force_encoding('binary')
+
+    d = dest; util.append_int32besize_int48_le!(d, 0x080706050403); d.must_equal "\x01\x02\x00\x00\x00\x06\x03\x04\x05\x06\x07\x08"
+    d = dest; util.append_int32besize_int48_le!(d, 0xf8f7f6f5f4f3); d.must_equal "\x01\x02\x00\x00\x00\x06\xf3\xf4\xf5\xf6\xf7\xf8".force_encoding('binary')
+    d = dest; util.append_int32besize_sint48_le!(d, 0x080706050403); d.must_equal "\x01\x02\x00\x00\x00\x06\x03\x04\x05\x06\x07\x08"
+    d = dest; util.append_int32besize_sint48_le!(d, -7731092785933); d.must_equal "\x01\x02\x00\x00\x00\x06\xf3\xf4\xf5\xf6\xf7\xf8".force_encoding('binary')
+
+    d = dest; util.append_int32besize_int48_be!(d, 0x030405060708); d.must_equal "\x01\x02\x00\x00\x00\x06\x03\x04\x05\x06\x07\x08"
+    d = dest; util.append_int32besize_int48_be!(d, 0xf3f4f5f6f7f8); d.must_equal "\x01\x02\x00\x00\x00\x06\xf3\xf4\xf5\xf6\xf7\xf8".force_encoding('binary')
+    d = dest; util.append_int32besize_sint48_be!(d, 0x030405060708); d.must_equal "\x01\x02\x00\x00\x00\x06\x03\x04\x05\x06\x07\x08"
+    d = dest; util.append_int32besize_sint48_be!(d, -13241552537608); d.must_equal "\x01\x02\x00\x00\x00\x06\xf3\xf4\xf5\xf6\xf7\xf8".force_encoding('binary')
+
+    d = dest; util.append_int32besize_int56_le!(d, 0x09080706050403); d.must_equal "\x01\x02\x00\x00\x00\x07\x03\x04\x05\x06\x07\x08\x09"
+    d = dest; util.append_int32besize_int56_le!(d, 0xf9f8f7f6f5f4f3); d.must_equal "\x01\x02\x00\x00\x00\x07\xf3\xf4\xf5\xf6\xf7\xf8\xf9".force_encoding('binary')
+    d = dest; util.append_int32besize_sint56_le!(d, 0x09080706050403); d.must_equal "\x01\x02\x00\x00\x00\x07\x03\x04\x05\x06\x07\x08\x09"
+    d = dest; util.append_int32besize_sint56_le!(d, -1696580953049869); d.must_equal "\x01\x02\x00\x00\x00\x07\xf3\xf4\xf5\xf6\xf7\xf8\xf9".force_encoding('binary')
+
+    d = dest; util.append_int32besize_int56_be!(d, 0x03040506070809); d.must_equal "\x01\x02\x00\x00\x00\x07\x03\x04\x05\x06\x07\x08\x09"
+    d = dest; util.append_int32besize_int56_be!(d, 0xf3f4f5f6f7f8f9); d.must_equal "\x01\x02\x00\x00\x00\x07\xf3\xf4\xf5\xf6\xf7\xf8\xf9".force_encoding('binary')
+    d = dest; util.append_int32besize_sint56_be!(d, 0x03040506070809); d.must_equal "\x01\x02\x00\x00\x00\x07\x03\x04\x05\x06\x07\x08\x09"
+    d = dest; util.append_int32besize_sint56_be!(d, -3389837449627399); d.must_equal "\x01\x02\x00\x00\x00\x07\xf3\xf4\xf5\xf6\xf7\xf8\xf9".force_encoding('binary')
+
+    d = dest; util.append_int32besize_int64_le!(d, 0x0a09080706050403); d.must_equal "\x01\x02\x00\x00\x00\x08\x03\x04\x05\x06\x07\x08\x09\x0a"
+    d = dest; util.append_int32besize_int64_le!(d, 0xfaf9f8f7f6f5f4f3); d.must_equal "\x01\x02\x00\x00\x00\x08\xf3\xf4\xf5\xf6\xf7\xf8\xf9\xfa".force_encoding('binary')
+    d = dest; util.append_int32besize_sint64_le!(d, 0x0a09080706050403); d.must_equal "\x01\x02\x00\x00\x00\x08\x03\x04\x05\x06\x07\x08\x09\x0a"
+    d = dest; util.append_int32besize_sint64_le!(d, -361984551142689549); d.must_equal "\x01\x02\x00\x00\x00\x08\xf3\xf4\xf5\xf6\xf7\xf8\xf9\xfa".force_encoding('binary')
+
+    d = dest; util.append_int32besize_int64_be!(d, 0x030405060708090a); d.must_equal "\x01\x02\x00\x00\x00\x08\x03\x04\x05\x06\x07\x08\x09\x0a"
+    d = dest; util.append_int32besize_int64_be!(d, 0xf3f4f5f6f7f8f9fa); d.must_equal "\x01\x02\x00\x00\x00\x08\xf3\xf4\xf5\xf6\xf7\xf8\xf9\xfa".force_encoding('binary')
+    d = dest; util.append_int32besize_sint64_be!(d, 0x030405060708090a); d.must_equal "\x01\x02\x00\x00\x00\x08\x03\x04\x05\x06\x07\x08\x09\x0a"
+    d = dest; util.append_int32besize_sint64_be!(d, -867798387104613894); d.must_equal "\x01\x02\x00\x00\x00\x08\xf3\xf4\xf5\xf6\xf7\xf8\xf9\xfa".force_encoding('binary')
+
+    d = dest; util.append_int32besize_ber!(d, 3); d.must_equal "\x01\x02\x00\x00\x00\x01\x03"
+    d = dest; util.append_int32besize_ber!(d, 14724); d.must_equal "\x01\x02\x00\x00\x00\x02\xf3\x04".force_encoding('binary')
+    d = dest; util.append_int32besize_ber!(d, 1899013); d.must_equal "\x01\x02\x00\x00\x00\x03\xf3\xf4\x05".force_encoding('binary')
+    d = dest; util.append_int32besize_ber!(d, 243088006); d.must_equal "\x01\x02\x00\x00\x00\x04\xf3\xf4\xf5\x06".force_encoding('binary')
+  end
+
   it "must append string" do
     d = dest; util.append_string!(d, "asdfфыва"); d.must_equal "\x01\x02asdf\xD1\x84\xD1\x8B\xD0\xB2\xD0\xB0".force_encoding('binary')
     d = dest; util.append_bersize_string!(d, "asdfфыва"); d.must_equal "\x01\x02\x0casdf\xD1\x84\xD1\x8B\xD0\xB2\xD0\xB0".force_encoding('binary')
+    d = dest; util.append_int32lesize_string!(d, "asdfфыва"); d.must_equal "\x01\x02\x0c\x00\x00\x00asdf\xD1\x84\xD1\x8B\xD0\xB2\xD0\xB0".force_encoding('binary')
+    d = dest; util.append_int32besize_string!(d, "asdfфыва"); d.must_equal "\x01\x02\x00\x00\x00\x0casdf\xD1\x84\xD1\x8B\xD0\xB2\xD0\xB0".force_encoding('binary')
   end
 end
 
@@ -460,8 +544,13 @@ describe 'pure_ruby' do
   class_eval(&shared_example)
 end
 
-require 'bin_utils/native_bin_utils'
-describe 'native' do
-  let(:util){ BinUtils::Native }
-  class_eval(&shared_example)
+begin
+  require 'bin_utils/native_bin_utils'
+  describe 'native' do
+    let(:util){ BinUtils::Native }
+    class_eval(&shared_example)
+  end
+rescue LoadError
+  puts "NO NATIVE MODULE TESTED"
 end
+

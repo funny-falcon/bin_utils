@@ -664,7 +664,7 @@ module BinUtils
 
     BER = 'w'
     INT32LE_BER = 'Vw'
-    INT32NE_BER = 'Nw'
+    INT32BE_BER = 'Nw'
     def append_ber!(data, int)
       data << [int].pack(BER)
     end
