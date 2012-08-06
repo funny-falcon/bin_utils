@@ -111,6 +111,9 @@ shared_example = proc do
     util.get_sint64_be(src, 0).must_equal 0x01020304f5f6f7f8
     util.get_sint64_be(src, 4).must_equal(-723118041444250868)
 
+    util.get_ber(src).must_equal 1
+    util.get_ber(src, 0).must_equal 1
+    util.get_ber(src, 6).must_equal 251542666
   end
 end
 

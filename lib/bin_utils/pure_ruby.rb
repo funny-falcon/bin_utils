@@ -247,6 +247,20 @@ module BinUtils
       10
     end
 
+    def get_ber(data, i=0)
+      res = 0
+      while true
+        if (byte = data.getbyte(i)) <= 127
+          res += byte
+          break
+        else
+          res = (res + (byte - 128)) * 128
+          i += 1
+        end
+      end
+      res
+    end
+
     def slice_ber!(data)
       res = 0
       pos = 0
