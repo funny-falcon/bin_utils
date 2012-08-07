@@ -5,6 +5,9 @@ class String
 end
 
 module BinUtils
+  # Pure Ruby implementation of bin utils.
+  # It is provided mostly as reference implementation, but JIT enabled ruby implementations
+  # (such as jruby and rubinius) could benefit from it.
   module PureRuby
     extend self
     INT32_INT32_LE = 'VV'.freeze
@@ -277,370 +280,331 @@ module BinUtils
       res
     end
 
-    def append_int8!(str, int)
-      str << (int & 255)
+    def append_int8!(str, *ints)
+      i = 0
+      sz = ints.size
+      while i < sz
+        str << (ints[i] & 255)
+        i += 1
+      end
+      str
     end
 
-    def append_bersize_int8!(str, int)
-      str << 1 << (int & 255)
+    def append_int16_le!(str, *ints)
+      i = 0
+      sz = ints.size
+      while i < sz
+        int = ints[i]
+        str << (int & 255) << ((int>>8) & 255)
+        i += 1
+      end
+      str
     end
 
-    def append_int16_le!(str, int)
-      str << (int & 255) << ((int>>8) & 255)
+    def append_int24_le!(str, *ints)
+      i = 0
+      sz = ints.size
+      while i < sz
+        int = ints[i]
+        str << (int & 255) << ((int>>8) & 255) <<
+               ((int>>16) & 255)
+        i += 1
+      end
+      str
     end
 
-    def append_int24_le!(str, int)
-      str << (int & 255) << ((int>>8) & 255) <<
-             ((int>>16) & 255)
+    def append_int32_le!(str, *ints)
+      i = 0
+      sz = ints.size
+      while i < sz
+        int = ints[i]
+        str << (int & 255) << ((int>>8) & 255) <<
+               ((int>>16) & 255) << ((int>>24) & 255)
+        i += 1
+      end
+      str
     end
 
-    def append_int32_le!(str, int)
-      str << (int & 255) << ((int>>8) & 255) <<
-             ((int>>16) & 255) << ((int>>24) & 255)
+    def append_int40_le!(str, *ints)
+      i = 0
+      sz = ints.size
+      while i < sz
+        int = ints[i]
+        str << (int & 255) << ((int>>8) & 255) <<
+               ((int>>16) & 255) << ((int>>24) & 255) <<
+               ((int>>32) & 255)
+        i += 1
+      end
+      str
     end
 
-    def append_int40_le!(str, int)
-      str << (int & 255) << ((int>>8) & 255) <<
-             ((int>>16) & 255) << ((int>>24) & 255) <<
-             ((int>>32) & 255)
+    def append_int48_le!(str, *ints)
+      i = 0
+      sz = ints.size
+      while i < sz
+        int = ints[i]
+        str << [int & MAX_INT32, int >> 32].pack(INT32_INT16_LE)
+        i += 1
+      end
+      str
     end
 
-    def append_int48_le!(str, int)
-      str << [int & MAX_INT32, int >> 32].pack(INT32_INT16_LE)
+    def append_int56_le!(str, *ints)
+      i = 0
+      sz = ints.size
+      while i < sz
+        int = ints[i]
+        str << [int & MAX_INT32, (int >> 32) & MAX_INT16, (int >> 48)].pack(INT32_INT16_INT8_LE)
+        i += 1
+      end
+      str
     end
 
-    def append_int56_le!(str, int)
-      str << [int & MAX_INT32, (int >> 32) & MAX_INT16, (int >> 48)].pack(INT32_INT16_INT8_LE)
+    def append_int64_le!(str, *ints)
+      i = 0
+      sz = ints.size
+      while i < sz
+        int = ints[i]
+        str << [int & MAX_INT32, int >> 32].pack(INT32_INT32_LE)
+        i += 1
+      end
+      str
     end
 
-    def append_int64_le!(str, int)
-      str << [int & MAX_INT32, int >> 32].pack(INT32_INT32_LE)
+    def append_int16_be!(str, *ints)
+      i = 0
+      sz = ints.size
+      while i < sz
+        int = ints[i]
+        str << ((int>>8) & 255) << (int & 255)
+        i += 1
+      end
+      str
     end
 
-    alias append_sint8! append_int8!
-    alias append_sint16_le! append_int16_le!
-    alias append_sint24_le! append_int24_le!
-    alias append_sint32_le! append_int32_le!
-    alias append_sint40_le! append_int40_le!
-    alias append_sint48_le! append_int48_le!
-    alias append_sint56_le! append_int56_le!
-    alias append_sint64_le! append_int64_le!
-
-    def append_int16_be!(str, int)
-      str << ((int>>8) & 255) << (int & 255)
+    def append_int24_be!(str, *ints)
+      i = 0
+      sz = ints.size
+      while i < sz
+        int = ints[i]
+        str << ((int>>16) & 255) << ((int>>8) & 255) << (int & 255)
+        i += 1
+      end
+      str
     end
 
-    def append_int24_be!(str, int)
-      str << ((int>>16) & 255) << ((int>>8) & 255) << (int & 255)
+    def append_int32_be!(str, *ints)
+      i = 0
+      sz = ints.size
+      while i < sz
+        int = ints[i]
+        str << ((int>>24) & 255) << ((int>>16) & 255) <<
+               ((int>>8) & 255) << (int & 255)
+        i += 1
+      end
+      str
     end
 
-    def append_int32_be!(str, int)
-      str << ((int>>24) & 255) << ((int>>16) & 255) <<
-             ((int>>8) & 255) << (int & 255)
+    def append_int40_be!(str, *ints)
+      i = 0
+      sz = ints.size
+      while i < sz
+        int = ints[i]
+        str << ((int>>32) & 255) << ((int>>24) & 255) <<
+               ((int>>16) & 255) << ((int>>8) & 255) <<
+               (int & 255)
+        i += 1
+      end
+      str
     end
 
-    def append_int40_be!(str, int)
-      str << ((int>>32) & 255) << ((int>>24) & 255) <<
-             ((int>>16) & 255) << ((int>>8) & 255) <<
-             (int & 255)
+    def append_int48_be!(str, *ints)
+      i = 0
+      sz = ints.size
+      while i < sz
+        int = ints[i]
+        str << [int >> 32, int & MAX_INT32].pack(INT16_INT32_BE)
+        i += 1
+      end
+      str
     end
 
-    def append_int48_be!(str, int)
-      str << [int >> 32, int & MAX_INT32].pack(INT16_INT32_BE)
+    def append_int56_be!(str, *ints)
+      i = 0
+      sz = ints.size
+      while i < sz
+        int = ints[i]
+        str << [(int >> 48), (int >> 32) & MAX_INT16, int & MAX_INT32].pack(INT8_INT16_INT32_BE)
+        i += 1
+      end
+      str
     end
 
-    def append_int56_be!(str, int)
-      str << [(int >> 48), (int >> 32) & MAX_INT16, int & MAX_INT32].pack(INT8_INT16_INT32_BE)
+    def append_int64_be!(str, *ints)
+      i = 0
+      sz = ints.size
+      while i < sz
+        int = ints[i]
+        str << [int >> 32, int & MAX_INT32].pack(INT32_INT32_BE)
+        i += 1
+      end
+      str
     end
 
-    def append_int64_be!(str, int)
-      str << [int >> 32, int & MAX_INT32].pack(INT32_INT32_BE)
+    def append_bersize_int8!(str, *ints)
+      append_ber!(str, ints.size)
+      append_int8!(str, *ints)
     end
 
-    alias append_sint8! append_int8!
-    alias append_sint16_be! append_int16_be!
-    alias append_sint24_be! append_int24_be!
-    alias append_sint32_be! append_int32_be!
-    alias append_sint40_be! append_int40_be!
-    alias append_sint48_be! append_int48_be!
-    alias append_sint56_be! append_int56_be!
-    alias append_sint64_be! append_int64_be!
-
-    def append_bersize_int16_le!(str, int)
-      str << 2 << (int & 255) << ((int>>8) & 255)
+    def append_bersize_int16_le!(str, *ints)
+      append_ber!(str, ints.size * 2)
+      append_int16_le!(str, *ints)
     end
 
-    def append_bersize_int24_le!(str, int)
-      str << 3 << (int & 255) << ((int>>8) & 255) <<
-             ((int>>16) & 255)
+    def append_bersize_int24_le!(str, *ints)
+      append_ber!(str, ints.size * 3)
+      append_int24_le!(str, *ints)
     end
 
-    def append_bersize_int32_le!(str, int)
-      str << 4 <<
-              (int & 255) << ((int>>8) & 255) <<
-             ((int>>16) & 255) << ((int>>24) & 255)
+    def append_bersize_int32_le!(str, *ints)
+      append_ber!(str, ints.size * 4)
+      append_int32_le!(str, *ints)
     end
 
-    def append_bersize_int40_le!(str, int)
-      str << 5 <<
-             (int & 255) << ((int>>8) & 255) <<
-             ((int>>16) & 255) << ((int>>24) & 255) <<
-             ((int>>32) & 255)
+    def append_bersize_int40_le!(str, *ints)
+      append_ber!(str, ints.size * 5)
+      append_int40_le!(str, *ints)
     end
 
-    def append_bersize_int48_le!(str, int)
-      str << 6 << [int & MAX_INT32, int >> 32].pack(INT32_INT16_LE)
+    def append_bersize_int48_le!(str, *ints)
+      append_ber!(str, ints.size * 6)
+      append_int48_le!(str, *ints)
     end
 
-    def append_bersize_int56_le!(str, int)
-      str << 7 << [int & MAX_INT32, (int >> 32) & MAX_INT16, (int >> 48)].pack(INT32_INT16_INT8_LE)
+    def append_bersize_int56_le!(str, *ints)
+      append_ber!(str, ints.size * 7)
+      append_int56_le!(str, *ints)
     end
 
-    def append_bersize_int64_le!(str, int)
-      str << 8 << [int & MAX_INT32, int >> 32].pack(INT32_INT32_LE)
+    def append_bersize_int64_le!(str, *ints)
+      append_ber!(str, ints.size * 8)
+      append_int64_le!(str, *ints)
     end
 
-    alias append_bersize_sint8! append_bersize_int8!
-    alias append_bersize_sint16_le! append_bersize_int16_le!
-    alias append_bersize_sint24_le! append_bersize_int24_le!
-    alias append_bersize_sint32_le! append_bersize_int32_le!
-    alias append_bersize_sint40_le! append_bersize_int40_le!
-    alias append_bersize_sint48_le! append_bersize_int48_le!
-    alias append_bersize_sint56_le! append_bersize_int56_le!
-    alias append_bersize_sint64_le! append_bersize_int64_le!
-
-    def append_bersize_int16_be!(str, int)
-      str << 2 << ((int>>8) & 255) << (int & 255)
+    def append_bersize_int16_be!(str, *ints)
+      append_ber!(str, ints.size * 2)
+      append_int16_be!(str, *ints)
     end
 
-    def append_bersize_int24_be!(str, int)
-      str << 3 << ((int>>16) & 255) << ((int>>8) & 255) << (int & 255)
+    def append_bersize_int24_be!(str, *ints)
+      append_ber!(str, ints.size * 3)
+      append_int24_be!(str, *ints)
     end
 
-    def append_bersize_int32_be!(str, int)
-      str << 4 <<
-             ((int>>24) & 255) << ((int>>16) & 255) <<
-             ((int>>8) & 255) << (int & 255)
+    def append_bersize_int32_be!(str, *ints)
+      append_ber!(str, ints.size * 4)
+      append_int32_be!(str, *ints)
     end
 
-    def append_bersize_int40_be!(str, int)
-      str << 5 <<
-             ((int>>32) & 255) << ((int>>24) & 255) <<
-             ((int>>16) & 255) << ((int>>8) & 255) <<
-             (int & 255)
+    def append_bersize_int40_be!(str, *ints)
+      append_ber!(str, ints.size * 5)
+      append_int40_be!(str, *ints)
     end
 
-    def append_bersize_int48_be!(str, int)
-      str << 6 << [int >> 32, int & MAX_INT32].pack(INT16_INT32_BE)
+    def append_bersize_int48_be!(str, *ints)
+      append_ber!(str, ints.size * 6)
+      append_int48_be!(str, *ints)
     end
 
-    def append_bersize_int56_be!(str, int)
-      str << 7 << [(int >> 48), (int >> 32) & MAX_INT16, int & MAX_INT32].pack(INT8_INT16_INT32_BE)
+    def append_bersize_int56_be!(str, *ints)
+      append_ber!(str, ints.size * 7)
+      append_int56_be!(str, *ints)
     end
 
-    def append_bersize_int64_be!(str, int)
-      str << 8 << [int >> 32, int & MAX_INT32].pack(INT32_INT32_BE)
+    def append_bersize_int64_be!(str, *ints)
+      append_ber!(str, ints.size * 8)
+      append_int64_be!(str, *ints)
     end
 
-    alias append_bersize_sint16_be! append_bersize_int16_be!
-    alias append_bersize_sint24_be! append_bersize_int24_be!
-    alias append_bersize_sint32_be! append_bersize_int32_be!
-    alias append_bersize_sint40_be! append_bersize_int40_be!
-    alias append_bersize_sint48_be! append_bersize_int48_be!
-    alias append_bersize_sint56_be! append_bersize_int56_be!
-    alias append_bersize_sint64_be! append_bersize_int64_be!
-
-    INT32LE_1 = "\x01\x00\x00\x00"
-    INT32LE_2 = "\x02\x00\x00\x00"
-    INT32LE_3 = "\x03\x00\x00\x00"
-    INT32LE_4 = "\x04\x00\x00\x00"
-    INT32LE_5 = "\x05\x00\x00\x00"
-    INT32LE_6 = "\x06\x00\x00\x00"
-    INT32LE_7 = "\x07\x00\x00\x00"
-    INT32LE_8 = "\x08\x00\x00\x00"
-    def append_int32lesize_int8!(str, int)
-      str << INT32LE_1 << (int & 255)
+    def append_int32size_int8_le!(str, *ints)
+      append_int32_le!(str, ints.size)
+      append_int8!(str, *ints)
     end
 
-    def append_int32lesize_int16_le!(str, int)
-      str << INT32LE_2 << (int & 255) << ((int>>8) & 255)
+    def append_int32size_int16_le!(str, *ints)
+      append_int32_le!(str, ints.size * 2)
+      append_int16_le!(str, *ints)
     end
 
-    def append_int32lesize_int24_le!(str, int)
-      str << INT32LE_3 << (int & 255) << ((int>>8) & 255) <<
-             ((int>>16) & 255)
+    def append_int32size_int24_le!(str, *ints)
+      append_int32_le!(str, ints.size * 3)
+      append_int24_le!(str, *ints)
     end
 
-    def append_int32lesize_int32_le!(str, int)
-      str << INT32LE_4 <<
-              (int & 255) << ((int>>8) & 255) <<
-             ((int>>16) & 255) << ((int>>24) & 255)
+    def append_int32size_int32_le!(str, *ints)
+      append_int32_le!(str, ints.size * 4)
+      append_int32_le!(str, *ints)
     end
 
-    def append_int32lesize_int40_le!(str, int)
-      str << INT32LE_5 <<
-             (int & 255) << ((int>>8) & 255) <<
-             ((int>>16) & 255) << ((int>>24) & 255) <<
-             ((int>>32) & 255)
+    def append_int32size_int40_le!(str, *ints)
+      append_int32_le!(str, ints.size * 5)
+      append_int40_le!(str, *ints)
     end
 
-    def append_int32lesize_int48_le!(str, int)
-      str << INT32LE_6 << [int & MAX_INT32, int >> 32].pack(INT32_INT16_LE)
+    def append_int32size_int48_le!(str, *ints)
+      append_int32_le!(str, ints.size * 6)
+      append_int48_le!(str, *ints)
     end
 
-    def append_int32lesize_int56_le!(str, int)
-      str << INT32LE_7 << [int & MAX_INT32, (int >> 32) & MAX_INT16, (int >> 48)].pack(INT32_INT16_INT8_LE)
+    def append_int32size_int56_le!(str, *ints)
+      append_int32_le!(str, ints.size * 7)
+      append_int56_le!(str, *ints)
     end
 
-    def append_int32lesize_int64_le!(str, int)
-      str << INT32LE_8 << [int & MAX_INT32, int >> 32].pack(INT32_INT32_LE)
+    def append_int32size_int64_le!(str, *ints)
+      append_int32_le!(str, ints.size * 8)
+      append_int64_le!(str, *ints)
     end
 
-    alias append_int32lesize_sint8! append_int32lesize_int8!
-    alias append_int32lesize_sint16_le! append_int32lesize_int16_le!
-    alias append_int32lesize_sint24_le! append_int32lesize_int24_le!
-    alias append_int32lesize_sint32_le! append_int32lesize_int32_le!
-    alias append_int32lesize_sint40_le! append_int32lesize_int40_le!
-    alias append_int32lesize_sint48_le! append_int32lesize_int48_le!
-    alias append_int32lesize_sint56_le! append_int32lesize_int56_le!
-    alias append_int32lesize_sint64_le! append_int32lesize_int64_le!
-
-    def append_int32lesize_int16_be!(str, int)
-      str << INT32LE_2 << ((int>>8) & 255) << (int & 255)
+    def append_int32size_int8_be!(str, *ints)
+      append_int32_be!(str, ints.size)
+      append_int8!(str, *ints)
     end
 
-    def append_int32lesize_int24_be!(str, int)
-      str << INT32LE_3 << ((int>>16) & 255) << ((int>>8) & 255) << (int & 255)
+    def append_int32size_int16_be!(str, *ints)
+      append_int32_be!(str, ints.size * 2)
+      append_int16_be!(str, *ints)
     end
 
-    def append_int32lesize_int32_be!(str, int)
-      str << INT32LE_4 <<
-             ((int>>24) & 255) << ((int>>16) & 255) <<
-             ((int>>8) & 255) << (int & 255)
+    def append_int32size_int24_be!(str, *ints)
+      append_int32_be!(str, ints.size * 3)
+      append_int24_be!(str, *ints)
     end
 
-    def append_int32lesize_int40_be!(str, int)
-      str << INT32LE_5 <<
-             ((int>>32) & 255) << ((int>>24) & 255) <<
-             ((int>>16) & 255) << ((int>>8) & 255) <<
-             (int & 255)
+    def append_int32size_int32_be!(str, *ints)
+      append_int32_be!(str, ints.size * 4)
+      append_int32_be!(str, *ints)
     end
 
-    def append_int32lesize_int48_be!(str, int)
-      str << INT32LE_6 << [int >> 32, int & MAX_INT32].pack(INT16_INT32_BE)
+    def append_int32size_int40_be!(str, *ints)
+      append_int32_be!(str, ints.size * 5)
+      append_int40_be!(str, *ints)
     end
 
-    def append_int32lesize_int56_be!(str, int)
-      str << INT32LE_7 << [(int >> 48), (int >> 32) & MAX_INT16, int & MAX_INT32].pack(INT8_INT16_INT32_BE)
+    def append_int32size_int48_be!(str, *ints)
+      append_int32_be!(str, ints.size * 6)
+      append_int48_be!(str, *ints)
     end
 
-    def append_int32lesize_int64_be!(str, int)
-      str << INT32LE_8 << [int >> 32, int & MAX_INT32].pack(INT32_INT32_BE)
+    def append_int32size_int56_be!(str, *ints)
+      append_int32_be!(str, ints.size * 7)
+      append_int56_be!(str, *ints)
     end
 
-    alias append_int32lesize_sint16_be! append_int32lesize_int16_be!
-    alias append_int32lesize_sint24_be! append_int32lesize_int24_be!
-    alias append_int32lesize_sint32_be! append_int32lesize_int32_be!
-    alias append_int32lesize_sint40_be! append_int32lesize_int40_be!
-    alias append_int32lesize_sint48_be! append_int32lesize_int48_be!
-    alias append_int32lesize_sint56_be! append_int32lesize_int56_be!
-    alias append_int32lesize_sint64_be! append_int32lesize_int64_be!
-
-    INT32BE_1 = "\x00\x00\x00\x01"
-    INT32BE_2 = "\x00\x00\x00\x02"
-    INT32BE_3 = "\x00\x00\x00\x03"
-    INT32BE_4 = "\x00\x00\x00\x04"
-    INT32BE_5 = "\x00\x00\x00\x05"
-    INT32BE_6 = "\x00\x00\x00\x06"
-    INT32BE_7 = "\x00\x00\x00\x07"
-    INT32BE_8 = "\x00\x00\x00\x08"
-    def append_int32besize_int8!(str, int)
-      str << INT32BE_1 << (int & 255)
+    def append_int32size_int64_be!(str, *ints)
+      append_int32_be!(str, ints.size * 8)
+      append_int64_be!(str, *ints)
     end
-
-    def append_int32besize_int16_le!(str, int)
-      str << INT32BE_2 << (int & 255) << ((int>>8) & 255)
-    end
-
-    def append_int32besize_int24_le!(str, int)
-      str << INT32BE_3 << (int & 255) << ((int>>8) & 255) <<
-             ((int>>16) & 255)
-    end
-
-    def append_int32besize_int32_le!(str, int)
-      str << INT32BE_4 <<
-              (int & 255) << ((int>>8) & 255) <<
-             ((int>>16) & 255) << ((int>>24) & 255)
-    end
-
-    def append_int32besize_int40_le!(str, int)
-      str << INT32BE_5 <<
-             (int & 255) << ((int>>8) & 255) <<
-             ((int>>16) & 255) << ((int>>24) & 255) <<
-             ((int>>32) & 255)
-    end
-
-    def append_int32besize_int48_le!(str, int)
-      str << INT32BE_6 << [int & MAX_INT32, int >> 32].pack(INT32_INT16_LE)
-    end
-
-    def append_int32besize_int56_le!(str, int)
-      str << INT32BE_7 << [int & MAX_INT32, (int >> 32) & MAX_INT16, (int >> 48)].pack(INT32_INT16_INT8_LE)
-    end
-
-    def append_int32besize_int64_le!(str, int)
-      str << INT32BE_8 << [int & MAX_INT32, int >> 32].pack(INT32_INT32_LE)
-    end
-
-    alias append_int32besize_sint8! append_int32besize_int8!
-    alias append_int32besize_sint16_le! append_int32besize_int16_le!
-    alias append_int32besize_sint24_le! append_int32besize_int24_le!
-    alias append_int32besize_sint32_le! append_int32besize_int32_le!
-    alias append_int32besize_sint40_le! append_int32besize_int40_le!
-    alias append_int32besize_sint48_le! append_int32besize_int48_le!
-    alias append_int32besize_sint56_le! append_int32besize_int56_le!
-    alias append_int32besize_sint64_le! append_int32besize_int64_le!
-
-    def append_int32besize_int16_be!(str, int)
-      str << INT32BE_2 << ((int>>8) & 255) << (int & 255)
-    end
-
-    def append_int32besize_int24_be!(str, int)
-      str << INT32BE_3 << ((int>>16) & 255) << ((int>>8) & 255) << (int & 255)
-    end
-
-    def append_int32besize_int32_be!(str, int)
-      str << INT32BE_4 <<
-             ((int>>24) & 255) << ((int>>16) & 255) <<
-             ((int>>8) & 255) << (int & 255)
-    end
-
-    def append_int32besize_int40_be!(str, int)
-      str << INT32BE_5 <<
-             ((int>>32) & 255) << ((int>>24) & 255) <<
-             ((int>>16) & 255) << ((int>>8) & 255) <<
-             (int & 255)
-    end
-
-    def append_int32besize_int48_be!(str, int)
-      str << INT32BE_6 << [int >> 32, int & MAX_INT32].pack(INT16_INT32_BE)
-    end
-
-    def append_int32besize_int56_be!(str, int)
-      str << INT32BE_7 << [(int >> 48), (int >> 32) & MAX_INT16, int & MAX_INT32].pack(INT8_INT16_INT32_BE)
-    end
-
-    def append_int32besize_int64_be!(str, int)
-      str << INT32BE_8 << [int >> 32, int & MAX_INT32].pack(INT32_INT32_BE)
-    end
-
-    alias append_int32besize_sint16_be! append_int32besize_int16_be!
-    alias append_int32besize_sint24_be! append_int32besize_int24_be!
-    alias append_int32besize_sint32_be! append_int32besize_int32_be!
-    alias append_int32besize_sint40_be! append_int32besize_int40_be!
-    alias append_int32besize_sint48_be! append_int32besize_int48_be!
-    alias append_int32besize_sint56_be! append_int32besize_int56_be!
-    alias append_int32besize_sint64_be! append_int32besize_int64_be!
 
     BINARY = ::Encoding::BINARY
     def append_string!(data, str)
@@ -654,31 +618,238 @@ module BinUtils
       data << [str.bytesize, str].pack(BER_STRING)
     end
 
-    def append_int32lesize_string!(data, str)
+    def append_int32size_string_le!(data, str)
       data << [str.bytesize, str].pack(INT32LE_STRING)
     end
 
-    def append_int32besize_string!(data, str)
+    def append_int32size_string_be!(data, str)
       data << [str.bytesize, str].pack(INT32BE_STRING)
     end
 
-    BER = 'w'
+    BER = 'w*'
     INT32LE_BER = 'Vw'
     INT32BE_BER = 'Nw'
-    def append_ber!(data, int)
-      data << [int].pack(BER)
+    def append_ber!(data, *ints)
+      if ints.size == 1 && ints[0] < 128
+        data << ints[0]
+      else
+        data << ints.pack(BER)
+      end
     end
 
-    def append_bersize_ber!(data, int)
-      data << ber_size(int) << [int].pack(BER)
+    def append_bersize_ber!(data, *ints)
+      bers = ints.pack(BER)
+      append_ber!(data, bers.size)
+      data << bers
     end
 
-    def append_int32lesize_ber!(data, int)
-      data << [ber_size(int), int].pack(INT32LE_BER)
+    def append_int32size_ber_le!(data, *ints)
+      bers = ints.pack(BER)
+      append_int32_le!(data, bers.size)
+      data << bers
     end
 
-    def append_int32besize_ber!(data, int)
-      data << [ber_size(int), int].pack(INT32BE_BER)
+    def append_int32size_ber_be!(data, *ints)
+      bers = ints.pack(BER)
+      append_int32_be!(data, bers.size)
+      data << bers
+    end
+
+    # complex
+    
+    def append_int8_ber!(data, int1, *ints)
+      data << (int1 & 255)
+      append_ber!(data, *ints)
+    end
+
+    def append_int8_int16_le!(data, int1, *ints)
+      data << (int1 & 255)
+      append_int16_le!(data, *ints)
+    end
+
+    def append_int8_int24_le!(data, int1, *ints)
+      data << (int1 & 255)
+      append_int24_le!(data, *ints)
+    end
+
+    def append_int8_int32_le!(data, int1, *ints)
+      data << (int1 & 255)
+      append_int32_le!(data, *ints)
+    end
+    
+    def append_int16_ber_le!(data, int1, *ints)
+      append_int16_le!(data, int1)
+      append_ber!(data, *ints)
+    end
+
+    def append_int16_int8_le!(data, int1, *ints)
+      append_int16_le!(data, int1)
+      append_int8!(data, *ints)
+    end
+
+    def append_int16_int24_le!(data, int1, *ints)
+      append_int16_le!(data, int1)
+      append_int24_le!(data, *ints)
+    end
+
+    def append_int16_int32_le!(data, int1, *ints)
+      append_int16_le!(data, int1)
+      append_int32_le!(data, *ints)
+    end
+    
+    def append_int24_ber_le!(data, int1, *ints)
+      append_int24_le!(data, int1)
+      append_ber!(data, *ints)
+    end
+
+    def append_int24_int8_le!(data, int1, *ints)
+      append_int24_le!(data, int1)
+      append_int8!(data, *ints)
+    end
+
+    def append_int24_int16_le!(data, int1, *ints)
+      append_int24_le!(data, int1)
+      append_int16_le!(data, *ints)
+    end
+
+    def append_int24_int32_le!(data, int1, *ints)
+      append_int24_le!(data, int1)
+      append_int32_le!(data, *ints)
+    end
+    
+    def append_int32_ber_le!(data, int1, *ints)
+      append_int32_le!(data, int1)
+      append_ber!(data, *ints)
+    end
+
+    def append_int32_int8_le!(data, int1, *ints)
+      append_int32_le!(data, int1)
+      append_int8!(data, *ints)
+    end
+
+    def append_int32_int16_le!(data, int1, *ints)
+      append_int32_le!(data, int1)
+      append_int16_le!(data, *ints)
+    end
+
+    def append_int32_int24_le!(data, int1, *ints)
+      append_int32_le!(data, int1)
+      append_int24_le!(data, *ints)
+    end
+
+    def append_int8_int16_be!(data, int1, *ints)
+      data << (int1 & 255)
+      append_int16_be!(data, *ints)
+    end
+
+    def append_int8_int24_be!(data, int1, *ints)
+      data << (int1 & 255)
+      append_int24_be!(data, *ints)
+    end
+
+    def append_int8_int32_be!(data, int1, *ints)
+      data << (int1 & 255)
+      append_int32_be!(data, *ints)
+    end
+    
+    def append_int16_ber_be!(data, int1, *ints)
+      append_int16_be!(data, int1)
+      append_ber!(data, *ints)
+    end
+
+    def append_int16_int8_be!(data, int1, *ints)
+      append_int16_be!(data, int1)
+      append_int8!(data, *ints)
+    end
+
+    def append_int16_int24_be!(data, int1, *ints)
+      append_int16_be!(data, int1)
+      append_int24_be!(data, *ints)
+    end
+
+    def append_int16_int32_be!(data, int1, *ints)
+      append_int16_be!(data, int1)
+      append_int32_be!(data, *ints)
+    end
+    
+    def append_int24_ber_be!(data, int1, *ints)
+      append_int24_be!(data, int1)
+      append_ber!(data, *ints)
+    end
+
+    def append_int24_int8_be!(data, int1, *ints)
+      append_int24_be!(data, int1)
+      append_int8!(data, *ints)
+    end
+
+    def append_int24_int16_be!(data, int1, *ints)
+      append_int24_be!(data, int1)
+      append_int16_be!(data, *ints)
+    end
+
+    def append_int24_int32_be!(data, int1, *ints)
+      append_int24_be!(data, int1)
+      append_int32_be!(data, *ints)
+    end
+    
+    def append_int32_ber_be!(data, int1, *ints)
+      append_int32_be!(data, int1)
+      append_ber!(data, *ints)
+    end
+
+    def append_int32_int8_be!(data, int1, *ints)
+      append_int32_be!(data, int1)
+      append_int8!(data, *ints)
+    end
+
+    def append_int32_int16_be!(data, int1, *ints)
+      append_int32_be!(data, int1)
+      append_int16_be!(data, *ints)
+    end
+
+    def append_int32_int24_be!(data, int1, *ints)
+      append_int32_be!(data, int1)
+      append_int24_be!(data, *ints)
+    end
+
+    def append_ber_int8!(data, int1, *ints)
+      append_ber!(data, int1)
+      append_int8!(data, *ints)
+    end
+
+    def append_ber_int16_le!(data, int1, *ints)
+      append_ber!(data, int1)
+      append_int16_le!(data, *ints)
+    end
+
+    def append_ber_int24_le!(data, int1, *ints)
+      append_ber!(data, int1)
+      append_int24_le!(data, *ints)
+    end
+
+    def append_ber_int32_le!(data, int1, *ints)
+      append_ber!(data, int1)
+      append_int32_le!(data, *ints)
+    end
+
+    def append_ber_int8!(data, int1, *ints)
+      append_ber!(data, int1)
+      append_int8!(data, *ints)
+    end
+
+    def append_ber_int16_be!(data, int1, *ints)
+      append_ber!(data, int1)
+      append_int16_be!(data, *ints)
+    end
+
+    def append_ber_int24_be!(data, int1, *ints)
+      append_ber!(data, int1)
+      append_int24_be!(data, *ints)
+    end
+
+    def append_ber_int32_be!(data, int1, *ints)
+      append_ber!(data, int1)
+      append_int32_be!(data, *ints)
     end
   end
 end
