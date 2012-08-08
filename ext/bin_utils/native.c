@@ -1097,100 +1097,122 @@ append_ber(VALUE rstr, uint64_t ber)
     return 11-i;
 }
 
+typedef struct append_args {
+    VALUE str;
+    int argc;
+    VALUE *argv;
+} append_args;
+
+typedef struct append_args2 {
+    VALUE str;
+    int argc;
+    VALUE *argv;
+    VALUE int0;
+} append_args2;
+
 static void
-check_argc_append(int argc, int bits)
+check_argc_append(int argc, VALUE *argv, append_args *args, int bits)
 {
     if (argc < 1) {
         rb_raise(rb_eArgError, "accepts at least 1 argument: (string[, *int%ds])", bits);
     }
+    args->str = RTEST(argv[0]) ? argv[0] : rb_str_new(0, 0);
+    if (argc == 2 && TYPE(argv[1]) == T_ARRAY) {
+        args->argc = RARRAY_LEN(argv[1]);
+        args->argv = RARRAY_PTR(argv[1]);
+    }
+    else {
+        args->argc = argc-1;
+        args->argv = argv+1;
+    }
 }
 
 static void
-check_argc_append_2(int argc, int bits, int bits1)
+check_argc_append_2(int argc, VALUE *argv, append_args2 *args, int bits, int bits1)
 {
-    if (argc <= 1) {
+    if (argc < 2) {
         rb_raise(rb_eArgError, "accepts at least 2 arguments: (string, int%d[, *int%ds])", bits, bits1);
+    }
+    args->str = RTEST(argv[0]) ? argv[0] : rb_str_new(0, 0);
+    args->int0 = argv[1];
+    if (argc == 3 && TYPE(argv[2]) == T_ARRAY) {
+        args->argc = RARRAY_LEN(argv[2]);
+        args->argv = RARRAY_PTR(argv[2]);
+    }
+    else {
+        args->argc = argc-2;
+        args->argv = argv+2;
     }
 }
 
 /*** 32BIT **/
 static VALUE
-rb_append_int8(int argc, VALUE* argv, VALUE self)
+append_var_int8(int argc, VALUE* argv, VALUE str)
 {
-    VALUE str; int i;
-    check_argc_append(argc, 8);
-    str = argv[0];
-    for(i = 1; i < argc; i++) {
+    int i;
+    for(i = 0; i < argc; i++) {
         append_int8(str, NUM2INT(argv[i]));
     }
     return str;
 }
+#define append_var_int8_le append_var_int8
+#define append_var_int8_be append_var_int8
 
 static VALUE
-rb_append_int16_le(int argc, VALUE* argv, VALUE self)
+append_var_int16_le(int argc, VALUE* argv, VALUE str)
 {
-    VALUE str; int i;
-    check_argc_append(argc, 16);
-    str = argv[0];
-    for(i = 1; i < argc; i++) {
+    int i;
+    for(i = 0; i < argc; i++) {
         append_int16_le(str, NUM2INT(argv[i]));
     }
     return str;
 }
 
 static VALUE
-rb_append_int24_le(int argc, VALUE* argv, VALUE self)
+append_var_int24_le(int argc, VALUE* argv, VALUE str)
 {
-    VALUE str; int i;
-    check_argc_append(argc, 24);
-    str = argv[0];
-    for(i = 1; i < argc; i++) {
+    int i;
+    for(i = 0; i < argc; i++) {
         append_int24_le(str, NUM2INT(argv[i]));
     }
     return str;
 }
 
 static VALUE
-rb_append_int32_le(int argc, VALUE* argv, VALUE self)
+append_var_int32_le(int argc, VALUE* argv, VALUE str)
 {
-    VALUE str = argv[0];
     int i;
-    for(i = 1; i < argc; i++) {
+    for(i = 0; i < argc; i++) {
         append_int32_le(str, (int32_t)NUM2I64(argv[i]));
     }
     return str;
 }
 
 static VALUE
-rb_append_int16_be(int argc, VALUE* argv, VALUE self)
+append_var_int16_be(int argc, VALUE* argv, VALUE str)
 {
-    VALUE str; int i;
-    check_argc_append(argc, 16);
-    str = argv[0];
-    for(i = 1; i < argc; i++) {
+    int i;
+    for(i = 0; i < argc; i++) {
         append_int16_be(str, NUM2INT(argv[i]));
     }
     return str;
 }
 
 static VALUE
-rb_append_int24_be(int argc, VALUE* argv, VALUE self)
+append_var_int24_be(int argc, VALUE* argv, VALUE str)
 {
-    VALUE str; int i;
-    check_argc_append(argc, 24);
-    str = argv[0];
-    for(i = 1; i < argc; i++) {
+    int i;
+    for(i = 0; i < argc; i++) {
         append_int24_be(str, NUM2INT(argv[i]));
     }
     return str;
 }
 
 static VALUE
-rb_append_int32_be(int argc, VALUE* argv, VALUE self)
+append_var_int32_be(int argc, VALUE* argv, VALUE str)
 {
-    VALUE str = argv[0];
     int i;
-    for(i = 1; i < argc; i++) {
+    for(i = 0; i < argc; i++) {
         append_int32_be(str, (int32_t)NUM2I64(argv[i]));
     }
     return str;
@@ -1199,369 +1221,187 @@ rb_append_int32_be(int argc, VALUE* argv, VALUE self)
 
 /*** 64BIT ***/
 static VALUE
-rb_append_int40_le(int argc, VALUE* argv, VALUE self)
+append_var_int40_le(int argc, VALUE* argv, VALUE str)
 {
-    VALUE str; int i;
-    check_argc_append(argc, 40);
-    str = argv[0];
-    for(i = 1; i < argc; i++) {
+    int i;
+    for(i = 0; i < argc; i++) {
         append_int40_le(str, NUM2I64(argv[i]));
     }
     return str;
 }
 
 static VALUE
-rb_append_int48_le(int argc, VALUE* argv, VALUE self)
+append_var_int48_le(int argc, VALUE* argv, VALUE str)
 {
-    VALUE str; int i;
-    check_argc_append(argc, 48);
-    str = argv[0];
-    for(i = 1; i < argc; i++) {
+    int i;
+    for(i = 0; i < argc; i++) {
         append_int48_le(str, NUM2I64(argv[i]));
     }
     return str;
 }
 
 static VALUE
-rb_append_int56_le(int argc, VALUE* argv, VALUE self)
+append_var_int56_le(int argc, VALUE* argv, VALUE str)
 {
-    VALUE str; int i;
-    check_argc_append(argc, 56);
-    str = argv[0];
-    for(i = 1; i < argc; i++) {
+    int i;
+    for(i = 0; i < argc; i++) {
         append_int56_le(str, NUM2I64(argv[i]));
     }
     return str;
 }
 
 static VALUE
-rb_append_int64_le(int argc, VALUE* argv, VALUE self)
+append_var_int64_le(int argc, VALUE* argv, VALUE str)
 {
-    VALUE str; int i;
-    check_argc_append(argc, 64);
-    str = argv[0];
-    for(i = 1; i < argc; i++) {
+    int i;
+    for(i = 0; i < argc; i++) {
         append_int64_le(str, safe_int64_t(argv[i]));
     }
     return str;
 }
 
 static VALUE
-rb_append_int40_be(int argc, VALUE* argv, VALUE self)
+append_var_int40_be(int argc, VALUE* argv, VALUE str)
 {
-    VALUE str; int i;
-    check_argc_append(argc, 40);
-    str = argv[0];
-    for(i = 1; i < argc; i++) {
+    int i;
+    for(i = 0; i < argc; i++) {
         append_int40_be(str, NUM2I64(argv[i]));
     }
     return str;
 }
 
 static VALUE
-rb_append_int48_be(int argc, VALUE* argv, VALUE self)
+append_var_int48_be(int argc, VALUE* argv, VALUE str)
 {
-    VALUE str; int i;
-    check_argc_append(argc, 48);
-    str = argv[0];
-    for(i = 1; i < argc; i++) {
+    int i;
+    for(i = 0; i < argc; i++) {
         append_int48_be(str, NUM2I64(argv[i]));
     }
     return str;
 }
 
 static VALUE
-rb_append_int56_be(int argc, VALUE* argv, VALUE self)
+append_var_int56_be(int argc, VALUE* argv, VALUE str)
 {
-    VALUE str; int i;
-    check_argc_append(argc, 56);
-    str = argv[0];
-    for(i = 1; i < argc; i++) {
+    int i;
+    for(i = 0; i < argc; i++) {
         append_int56_be(str, NUM2I64(argv[i]));
     }
     return str;
 }
 
 static VALUE
-rb_append_int64_be(int argc, VALUE* argv, VALUE self)
+append_var_int64_be(int argc, VALUE* argv, VALUE str)
 {
-    VALUE str; int i;
-    check_argc_append(argc, 64);
-    str = argv[0];
-    for(i = 1; i < argc; i++) {
+    int i;
+    for(i = 0; i < argc; i++) {
         append_int64_be(str, safe_int64_t(argv[i]));
     }
     return str;
 }
 /*** 64BIT END **/
 
+
+#define append_func(type, bits) \
+static VALUE                                          \
+rb_append_##type(int argc, VALUE* argv, VALUE self)   \
+{                                                     \
+    append_args args;                                 \
+    check_argc_append(argc, argv, &args, bits);       \
+    return append_var_##type(args.argc, args.argv, args.str);\
+}
+
+append_func(int8, 8)
+append_func(int16_le, 16)
+append_func(int24_le, 24)
+append_func(int32_le, 32)
+append_func(int40_le, 40)
+append_func(int48_le, 48)
+append_func(int56_le, 56)
+append_func(int64_le, 64)
+append_func(int16_be, 16)
+append_func(int24_be, 24)
+append_func(int32_be, 32)
+append_func(int40_be, 40)
+append_func(int48_be, 48)
+append_func(int56_be, 56)
+append_func(int64_be, 64)
+
 /** APPEND END **/
 
 /** APPEND BERSIZE **/
-static VALUE
-rb_append_bersize_int8(int argc, VALUE* argv, VALUE self)
-{
-    check_argc_append(argc, 8);
-    append_ber(argv[0], (argc-1));
-    return rb_append_int8(argc, argv, self);
+#define append_bersize_func(type, bytes) \
+static VALUE                                                \
+rb_append_bersize_##type(int argc, VALUE* argv, VALUE self) \
+{                                                           \
+    append_args args;                                       \
+    check_argc_append(argc, argv, &args, bytes * 8);        \
+    append_ber(args.str, args.argc * bytes);                \
+    return append_var_##type(args.argc, args.argv, args.str);\
 }
 
-static VALUE
-rb_append_bersize_int16_le(int argc, VALUE* argv, VALUE self)
-{
-    check_argc_append(argc, 16);
-    append_ber(argv[0], (argc-1)*2);
-    return rb_append_int16_le(argc, argv, self);
+append_bersize_func(int8, 1)
+append_bersize_func(int16_le, 2)
+append_bersize_func(int24_le, 3)
+append_bersize_func(int32_le, 4)
+append_bersize_func(int40_le, 5)
+append_bersize_func(int48_le, 6)
+append_bersize_func(int56_le, 7)
+append_bersize_func(int64_le, 8)
+append_bersize_func(int16_be, 2)
+append_bersize_func(int24_be, 3)
+append_bersize_func(int32_be, 4)
+append_bersize_func(int40_be, 5)
+append_bersize_func(int48_be, 6)
+append_bersize_func(int56_be, 7)
+append_bersize_func(int64_be, 8)
+
+#define append_int32size_func(type, end, bytes) \
+static VALUE                                            \
+rb_append_int32size_##type##_##end(int argc, VALUE* argv, VALUE self) \
+{                                                       \
+    append_args args;                                   \
+    check_argc_append(argc, argv, &args, bytes * 8);    \
+    append_int32_##end(args.str, args.argc * bytes);    \
+    append_var_##type##_##end(args.argc, args.argv, args.str); \
+    return args.str;                                    \
 }
 
-static VALUE
-rb_append_bersize_int24_le(int argc, VALUE* argv, VALUE self)
-{
-    check_argc_append(argc, 24);
-    append_ber(argv[0], (argc-1)*3);
-    return rb_append_int24_le(argc, argv, self);
-}
-
-static VALUE
-rb_append_bersize_int32_le(int argc, VALUE* argv, VALUE self)
-{
-    check_argc_append(argc, 32);
-    append_ber(argv[0], (argc-1)*4);
-    return rb_append_int32_le(argc, argv, self);
-}
-
-static VALUE
-rb_append_bersize_int40_le(int argc, VALUE* argv, VALUE self)
-{
-    check_argc_append(argc, 40);
-    append_ber(argv[0], (argc-1)*5);
-    return rb_append_int40_le(argc, argv, self);
-}
-
-static VALUE
-rb_append_bersize_int48_le(int argc, VALUE* argv, VALUE self)
-{
-    check_argc_append(argc, 48);
-    append_ber(argv[0], (argc-1)*6);
-    return rb_append_int48_le(argc, argv, self);
-}
-
-static VALUE
-rb_append_bersize_int56_le(int argc, VALUE* argv, VALUE self)
-{
-    check_argc_append(argc, 56);
-    append_ber(argv[0], (argc-1)*7);
-    return rb_append_int56_le(argc, argv, self);
-}
-
-static VALUE
-rb_append_bersize_int64_le(int argc, VALUE* argv, VALUE self)
-{
-    check_argc_append(argc, 64);
-    append_ber(argv[0], (argc-1)*8);
-    return rb_append_int64_le(argc, argv, self);
-}
-
-static VALUE
-rb_append_bersize_int16_be(int argc, VALUE* argv, VALUE self)
-{
-    check_argc_append(argc, 16);
-    append_ber(argv[0], (argc-1)*2);
-    return rb_append_int16_be(argc, argv, self);
-}
-
-static VALUE
-rb_append_bersize_int24_be(int argc, VALUE* argv, VALUE self)
-{
-    check_argc_append(argc, 24);
-    append_ber(argv[0], (argc-1)*3);
-    return rb_append_int24_be(argc, argv, self);
-}
-
-static VALUE
-rb_append_bersize_int32_be(int argc, VALUE* argv, VALUE self)
-{
-    check_argc_append(argc, 32);
-    append_ber(argv[0], (argc-1)*4);
-    return rb_append_int32_be(argc, argv, self);
-}
-
-static VALUE
-rb_append_bersize_int40_be(int argc, VALUE* argv, VALUE self)
-{
-    check_argc_append(argc, 40);
-    append_ber(argv[0], (argc-1)*5);
-    return rb_append_int40_be(argc, argv, self);
-}
-
-static VALUE
-rb_append_bersize_int48_be(int argc, VALUE* argv, VALUE self)
-{
-    check_argc_append(argc, 48);
-    append_ber(argv[0], (argc-1)*6);
-    return rb_append_int48_be(argc, argv, self);
-}
-
-static VALUE
-rb_append_bersize_int56_be(int argc, VALUE* argv, VALUE self)
-{
-    check_argc_append(argc, 56);
-    append_ber(argv[0], (argc-1)*7);
-    return rb_append_int56_be(argc, argv, self);
-}
-
-static VALUE
-rb_append_bersize_int64_be(int argc, VALUE* argv, VALUE self)
-{
-    check_argc_append(argc, 64);
-    append_ber(argv[0], (argc-1)*8);
-    return rb_append_int64_be(argc, argv, self);
-}
-/** APPEND BERSIZE END **/
-
-/** APPEND INT32SIZE **/
-static VALUE
-rb_append_int32size_int8_le(int argc, VALUE* argv, VALUE self)
-{
-    check_argc_append(argc, 8);
-    append_int32_le(argv[0], (argc-1));
-    return rb_append_int8(argc, argv, self);
-}
-
-static VALUE
-rb_append_int32size_int16_le(int argc, VALUE* argv, VALUE self)
-{
-    check_argc_append(argc, 16);
-    append_int32_le(argv[0], (argc-1)*2);
-    return rb_append_int16_le(argc, argv, self);
-}
-
-static VALUE
-rb_append_int32size_int24_le(int argc, VALUE* argv, VALUE self)
-{
-    check_argc_append(argc, 24);
-    append_int32_le(argv[0], (argc-1)*3);
-    return rb_append_int24_le(argc, argv, self);
-}
-
-static VALUE
-rb_append_int32size_int32_le(int argc, VALUE* argv, VALUE self)
-{
-    check_argc_append(argc, 32);
-    append_int32_le(argv[0], (argc-1)*4);
-    return rb_append_int32_le(argc, argv, self);
-}
-
-static VALUE
-rb_append_int32size_int40_le(int argc, VALUE* argv, VALUE self)
-{
-    check_argc_append(argc, 40);
-    append_int32_le(argv[0], (argc-1)*5);
-    return rb_append_int40_le(argc, argv, self);
-}
-
-static VALUE
-rb_append_int32size_int48_le(int argc, VALUE* argv, VALUE self)
-{
-    check_argc_append(argc, 48);
-    append_int32_le(argv[0], (argc-1)*6);
-    return rb_append_int48_le(argc, argv, self);
-}
-
-static VALUE
-rb_append_int32size_int56_le(int argc, VALUE* argv, VALUE self)
-{
-    check_argc_append(argc, 56);
-    append_int32_le(argv[0], (argc-1)*7);
-    return rb_append_int56_le(argc, argv, self);
-}
-
-static VALUE
-rb_append_int32size_int64_le(int argc, VALUE* argv, VALUE self)
-{
-    check_argc_append(argc, 64);
-    append_int32_le(argv[0], (argc-1)*8);
-    return rb_append_int64_le(argc, argv, self);
-}
-
-static VALUE
-rb_append_int32size_int8_be(int argc, VALUE* argv, VALUE self)
-{
-    check_argc_append(argc, 8);
-    append_int32_be(argv[0], (argc-1));
-    return rb_append_int8(argc, argv, self);
-}
-
-static VALUE
-rb_append_int32size_int16_be(int argc, VALUE* argv, VALUE self)
-{
-    check_argc_append(argc, 16);
-    append_int32_be(argv[0], (argc-1)*2);
-    return rb_append_int16_be(argc, argv, self);
-}
-
-static VALUE
-rb_append_int32size_int24_be(int argc, VALUE* argv, VALUE self)
-{
-    check_argc_append(argc, 24);
-    append_int32_be(argv[0], (argc-1)*3);
-    return rb_append_int24_be(argc, argv, self);
-}
-
-static VALUE
-rb_append_int32size_int32_be(int argc, VALUE* argv, VALUE self)
-{
-    check_argc_append(argc, 32);
-    append_int32_be(argv[0], (argc-1)*4);
-    return rb_append_int32_be(argc, argv, self);
-}
-
-static VALUE
-rb_append_int32size_int40_be(int argc, VALUE* argv, VALUE self)
-{
-    check_argc_append(argc, 40);
-    append_int32_be(argv[0], (argc-1)*5);
-    return rb_append_int40_be(argc, argv, self);
-}
-
-static VALUE
-rb_append_int32size_int48_be(int argc, VALUE* argv, VALUE self)
-{
-    check_argc_append(argc, 48);
-    append_int32_be(argv[0], (argc-1)*6);
-    return rb_append_int48_be(argc, argv, self);
-}
-
-static VALUE
-rb_append_int32size_int56_be(int argc, VALUE* argv, VALUE self)
-{
-    check_argc_append(argc, 56);
-    append_int32_be(argv[0], (argc-1)*7);
-    return rb_append_int56_be(argc, argv, self);
-}
-
-static VALUE
-rb_append_int32size_int64_be(int argc, VALUE* argv, VALUE self)
-{
-    check_argc_append(argc, 64);
-    append_int32_be(argv[0], (argc-1)*8);
-    return rb_append_int64_be(argc, argv, self);
-}
-/** APPEND BERSIZE END **/
-/** APPEND INT32SIZE END **/
+append_int32size_func(int8, le, 1)
+append_int32size_func(int16, le, 2)
+append_int32size_func(int24, le, 3)
+append_int32size_func(int32, le, 4)
+append_int32size_func(int40, le, 5)
+append_int32size_func(int48, le, 6)
+append_int32size_func(int56, le, 7)
+append_int32size_func(int64, le, 8)
+append_int32size_func(int8, be, 1)
+append_int32size_func(int16, be, 2)
+append_int32size_func(int24, be, 3)
+append_int32size_func(int32, be, 4)
+append_int32size_func(int40, be, 5)
+append_int32size_func(int48, be, 6)
+append_int32size_func(int56, be, 7)
+append_int32size_func(int64, be, 8)
 
 /** APPEND BER **/
+static long
+append_var_ber(int argc, VALUE* argv, VALUE str)
+{
+    long i, bs = 0;
+    for(i = 0; i < argc; i++) {
+        bs += append_ber(str, safe_int64_t(argv[i]));
+    }
+    return bs;
+}
 
 static VALUE
 rb_append_ber(int argc, VALUE* argv, VALUE self)
 {
-    VALUE str; int i;
-    check_argc_append(argc, 0);
-    str = argv[0];
-    for(i = 1; i < argc; i++) {
-        append_ber(str, safe_int64_t(argv[i]));
-    }
-    return str;
+    append_args args;
+    check_argc_append(argc, argv, &args, 0);
+    append_var_ber(args.argc, args.argv, args.str);
+    return args.str;
 }
 
 static VALUE rb_append_bersize_string(VALUE self, VALUE str, VALUE add);
@@ -1570,57 +1410,47 @@ static const char zeros[4] = {0, 0, 0, 0};
 static VALUE
 rb_append_bersize_ber(int argc, VALUE* argv, VALUE self)
 {
-    VALUE str, add_str;
-    int i;
-    check_argc_append(argc, 0);
-    str = argv[0];
-    add_str = rb_str_tmp_new(0);
-    for(i = 1; i < argc; i++) {
-        append_ber(add_str, safe_int64_t(argv[i]));
-    }
-    return rb_append_bersize_string(self, str, add_str);
+    append_args args;
+    VALUE add_str = rb_str_new(0, 0);
+    check_argc_append(argc, argv, &args, 0);
+    append_var_ber(args.argc, args.argv, add_str);
+    return rb_append_bersize_string(self, args.str, add_str);
 }
 
 static VALUE
 rb_append_int32size_ber_le(int argc, VALUE* argv, VALUE self)
 {
-    VALUE str;
-    int i, bs=0, ss;
+    append_args args;
+    long ss, bs;
     uint8_t *ptr;
-    check_argc_append(argc, 0);
-    str = argv[0];
-    rb_str_cat(str, zeros, 4);
-    ss = RSTRING_LEN(str) - 4;
-    for(i = 1; i < argc; i++) {
-        bs += append_ber(str, safe_int64_t(argv[i]));
-    }
-    ptr = ((uint8_t*)RSTRING_PTR(str)) + ss;
+    check_argc_append(argc, argv, &args, 0);
+    rb_str_cat(args.str, zeros, 4);
+    ss = RSTRING_LEN(args.str) - 4;
+    bs = append_var_ber(args.argc, args.argv, args.str);
+    ptr = ((uint8_t*)RSTRING_PTR(args.str)) + ss;
     ptr[0] = bs & 255;
     ptr[1] = (bs >> 8) & 255;
     ptr[2] = (bs >> 16) & 255;
     ptr[3] = (bs >> 24) & 255;
-    return str;
+    return args.str;
 }
 
 static VALUE
 rb_append_int32size_ber_be(int argc, VALUE* argv, VALUE self)
 {
-    VALUE str;
-    int i = 0, bs=0, ss;
+    append_args args;
+    long ss, bs;
     uint8_t *ptr;
-    check_argc_append(argc, 0);
-    str = argv[0];
-    rb_str_cat(str, zeros, 4);
-    ss = RSTRING_LEN(str) - 4;
-    for(i = 1; i < argc; i++) {
-        bs += append_ber(str, safe_int64_t(argv[i]));
-    }
-    ptr = ((uint8_t*)RSTRING_PTR(str)) + ss;
+    check_argc_append(argc, argv, &args, 0);
+    rb_str_cat(args.str, zeros, 4);
+    ss = RSTRING_LEN(args.str) - 4;
+    bs = append_var_ber(args.argc, args.argv, args.str);
+    ptr = ((uint8_t*)RSTRING_PTR(args.str)) + ss;
     ptr[3] = bs & 255;
     ptr[2] = (bs >> 8) & 255;
     ptr[1] = (bs >> 16) & 255;
     ptr[0] = (bs >> 24) & 255;
-    return str;
+    return args.str;
 }
 /** APPEND BER END **/
 
@@ -1628,6 +1458,7 @@ rb_append_int32size_ber_be(int argc, VALUE* argv, VALUE self)
 static VALUE
 rb_append_string(VALUE self, VALUE str, VALUE add)
 {
+    if (!RTEST(str)) str = rb_str_new(0, 0);
     StringValue(add);
     rb_str_cat(str, RSTRING_PTR(add), RSTRING_LEN(add));
     RB_GC_GUARD(add);
@@ -1637,6 +1468,7 @@ rb_append_string(VALUE self, VALUE str, VALUE add)
 static VALUE
 rb_append_bersize_string(VALUE self, VALUE str, VALUE add)
 {
+    if (!RTEST(str)) str = rb_str_new(0, 0);
     StringValue(add);
     append_ber(str, RSTRING_LEN(add));
     rb_str_cat(str, RSTRING_PTR(add), RSTRING_LEN(add));
@@ -1647,6 +1479,7 @@ rb_append_bersize_string(VALUE self, VALUE str, VALUE add)
 static VALUE
 rb_append_int32size_string_le(VALUE self, VALUE str, VALUE add)
 {
+    if (!RTEST(str)) str = rb_str_new(0, 0);
     StringValue(add);
     append_int32_le(str, RSTRING_LEN(add));
     rb_str_cat(str, RSTRING_PTR(add), RSTRING_LEN(add));
@@ -1657,6 +1490,7 @@ rb_append_int32size_string_le(VALUE self, VALUE str, VALUE add)
 static VALUE
 rb_append_int32size_string_be(VALUE self, VALUE str, VALUE add)
 {
+    if (!RTEST(str)) str = rb_str_new(0, 0);
     StringValue(add);
     append_int32_be(str, RSTRING_LEN(add));
     rb_str_cat(str, RSTRING_PTR(add), RSTRING_LEN(add));
@@ -1670,346 +1504,80 @@ rb_append_int32size_string_be(VALUE self, VALUE str, VALUE add)
 static VALUE
 rb_append_int8_ber(int argc, VALUE *argv, VALUE self)
 {
-    check_argc_append_2(argc, 8, 0);
-    rb_append_int8(2, argv, self);
-    argv[1] = argv[0];
-    return rb_append_ber(argc-1, argv+1, self);
-}
-
-static VALUE
-rb_append_int16_ber_le(int argc, VALUE *argv, VALUE self)
-{
-    check_argc_append_2(argc, 16, 0);
-    rb_append_int16_le(2, argv, self);
-    argv[1] = argv[0];
-    return rb_append_ber(argc-1, argv+1, self);
-}
-
-static VALUE
-rb_append_int24_ber_le(int argc, VALUE *argv, VALUE self)
-{
-    check_argc_append_2(argc, 24, 0);
-    rb_append_int24_le(2, argv, self);
-    argv[1] = argv[0];
-    return rb_append_ber(argc-1, argv+1, self);
-}
-
-static VALUE
-rb_append_int32_ber_le(int argc, VALUE *argv, VALUE self)
-{
-    check_argc_append_2(argc, 32, 0);
-    rb_append_int32_le(2, argv, self);
-    argv[1] = argv[0];
-    return rb_append_ber(argc-1, argv+1, self);
-}
-
-static VALUE
-rb_append_int16_ber_be(int argc, VALUE *argv, VALUE self)
-{
-    check_argc_append_2(argc, 16, 0);
-    rb_append_int16_be(2, argv, self);
-    argv[1] = argv[0];
-    return rb_append_ber(argc-1, argv+1, self);
-}
-
-static VALUE
-rb_append_int24_ber_be(int argc, VALUE *argv, VALUE self)
-{
-    check_argc_append_2(argc, 24, 0);
-    rb_append_int24_be(2, argv, self);
-    argv[1] = argv[0];
-    return rb_append_ber(argc-1, argv+1, self);
-}
-
-static VALUE
-rb_append_int32_ber_be(int argc, VALUE *argv, VALUE self)
-{
-    check_argc_append_2(argc, 32, 0);
-    rb_append_int32_be(2, argv, self);
-    argv[1] = argv[0];
-    return rb_append_ber(argc-1, argv+1, self);
-}
-
-static VALUE
-rb_append_int8_int16_le(int argc, VALUE *argv, VALUE self)
-{
-    check_argc_append_2(argc, 8, 16);
-    rb_append_int8(2, argv, self);
-    argv[1] = argv[0];
-    return rb_append_int16_le(argc-1, argv+1, self);
-}
-
-static VALUE
-rb_append_int8_int24_le(int argc, VALUE *argv, VALUE self)
-{
-    check_argc_append_2(argc, 8, 24);
-    rb_append_int8(2, argv, self);
-    argv[1] = argv[0];
-    return rb_append_int24_le(argc-1, argv+1, self);
-}
-
-static VALUE
-rb_append_int8_int32_le(int argc, VALUE *argv, VALUE self)
-{
-    check_argc_append_2(argc, 8, 32);
-    rb_append_int8(2, argv, self);
-    argv[1] = argv[0];
-    return rb_append_int32_le(argc-1, argv+1, self);
-}
-
-static VALUE
-rb_append_int8_int16_be(int argc, VALUE *argv, VALUE self)
-{
-    check_argc_append_2(argc, 8, 16);
-    rb_append_int8(2, argv, self);
-    argv[1] = argv[0];
-    return rb_append_int16_be(argc-1, argv+1, self);
-}
-
-static VALUE
-rb_append_int8_int24_be(int argc, VALUE *argv, VALUE self)
-{
-    check_argc_append_2(argc, 8, 24);
-    rb_append_int8(2, argv, self);
-    argv[1] = argv[0];
-    return rb_append_int24_be(argc-1, argv+1, self);
-}
-
-static VALUE
-rb_append_int8_int32_be(int argc, VALUE *argv, VALUE self)
-{
-    check_argc_append_2(argc, 8, 32);
-    rb_append_int8(2, argv, self);
-    argv[1] = argv[0];
-    return rb_append_int32_be(argc-1, argv+1, self);
-}
-
-static VALUE
-rb_append_int16_int8_le(int argc, VALUE *argv, VALUE self)
-{
-    check_argc_append_2(argc, 16, 8);
-    rb_append_int16_le(2, argv, self);
-    argv[1] = argv[0];
-    return rb_append_int8(argc-1, argv+1, self);
-}
-
-static VALUE
-rb_append_int16_int24_le(int argc, VALUE *argv, VALUE self)
-{
-    check_argc_append_2(argc, 16, 24);
-    rb_append_int16_le(2, argv, self);
-    argv[1] = argv[0];
-    return rb_append_int24_le(argc-1, argv+1, self);
-}
-
-static VALUE
-rb_append_int16_int32_le(int argc, VALUE *argv, VALUE self)
-{
-    check_argc_append_2(argc, 16, 32);
-    rb_append_int16_le(2, argv, self);
-    argv[1] = argv[0];
-    return rb_append_int32_le(argc-1, argv+1, self);
-}
-
-static VALUE
-rb_append_int16_int8_be(int argc, VALUE *argv, VALUE self)
-{
-    check_argc_append_2(argc, 16, 8);
-    rb_append_int16_be(2, argv, self);
-    argv[1] = argv[0];
-    return rb_append_int8(argc-1, argv+1, self);
-}
-
-static VALUE
-rb_append_int16_int24_be(int argc, VALUE *argv, VALUE self)
-{
-    check_argc_append_2(argc, 16, 24);
-    rb_append_int16_be(2, argv, self);
-    argv[1] = argv[0];
-    return rb_append_int24_be(argc-1, argv+1, self);
-}
-
-static VALUE
-rb_append_int16_int32_be(int argc, VALUE *argv, VALUE self)
-{
-    check_argc_append_2(argc, 16, 32);
-    rb_append_int16_be(2, argv, self);
-    argv[1] = argv[0];
-    return rb_append_int32_be(argc-1, argv+1, self);
-}
-
-static VALUE
-rb_append_int24_int16_le(int argc, VALUE *argv, VALUE self)
-{
-    check_argc_append_2(argc, 24, 16);
-    rb_append_int24_le(2, argv, self);
-    argv[1] = argv[0];
-    return rb_append_int16_le(argc-1, argv+1, self);
-}
-
-static VALUE
-rb_append_int24_int8_le(int argc, VALUE *argv, VALUE self)
-{
-    check_argc_append_2(argc, 24, 8);
-    rb_append_int24_le(2, argv, self);
-    argv[1] = argv[0];
-    return rb_append_int8(argc-1, argv+1, self);
-}
-
-static VALUE
-rb_append_int24_int32_le(int argc, VALUE *argv, VALUE self)
-{
-    check_argc_append_2(argc, 24, 32);
-    rb_append_int24_le(2, argv, self);
-    argv[1] = argv[0];
-    return rb_append_int32_le(argc-1, argv+1, self);
-}
-
-static VALUE
-rb_append_int24_int16_be(int argc, VALUE *argv, VALUE self)
-{
-    check_argc_append_2(argc, 24, 16);
-    rb_append_int24_be(2, argv, self);
-    argv[1] = argv[0];
-    return rb_append_int16_be(argc-1, argv+1, self);
-}
-
-static VALUE
-rb_append_int24_int8_be(int argc, VALUE *argv, VALUE self)
-{
-    check_argc_append_2(argc, 24, 8);
-    rb_append_int24_be(2, argv, self);
-    argv[1] = argv[0];
-    return rb_append_int8(argc-1, argv+1, self);
-}
-
-static VALUE
-rb_append_int24_int32_be(int argc, VALUE *argv, VALUE self)
-{
-    check_argc_append_2(argc, 24, 32);
-    rb_append_int24_be(2, argv, self);
-    argv[1] = argv[0];
-    return rb_append_int32_be(argc-1, argv+1, self);
-}
-
-static VALUE
-rb_append_int32_int16_le(int argc, VALUE *argv, VALUE self)
-{
-    check_argc_append_2(argc, 32, 16);
-    rb_append_int32_le(2, argv, self);
-    argv[1] = argv[0];
-    return rb_append_int16_le(argc-1, argv+1, self);
-}
-
-static VALUE
-rb_append_int32_int24_le(int argc, VALUE *argv, VALUE self)
-{
-    check_argc_append_2(argc, 32, 24);
-    rb_append_int32_le(2, argv, self);
-    argv[1] = argv[0];
-    return rb_append_int24_le(argc-1, argv+1, self);
-}
-
-static VALUE
-rb_append_int32_int8_le(int argc, VALUE *argv, VALUE self)
-{
-    check_argc_append_2(argc, 32, 8);
-    rb_append_int32_le(2, argv, self);
-    argv[1] = argv[0];
-    return rb_append_int8(argc-1, argv+1, self);
-}
-
-static VALUE
-rb_append_int32_int16_be(int argc, VALUE *argv, VALUE self)
-{
-    check_argc_append_2(argc, 32, 16);
-    rb_append_int32_be(2, argv, self);
-    argv[1] = argv[0];
-    return rb_append_int16_be(argc-1, argv+1, self);
-}
-
-static VALUE
-rb_append_int32_int24_be(int argc, VALUE *argv, VALUE self)
-{
-    check_argc_append_2(argc, 32, 24);
-    rb_append_int32_be(2, argv, self);
-    argv[1] = argv[0];
-    return rb_append_int24_be(argc-1, argv+1, self);
-}
-
-static VALUE
-rb_append_int32_int8_be(int argc, VALUE *argv, VALUE self)
-{
-    check_argc_append_2(argc, 32, 8);
-    rb_append_int32_be(2, argv, self);
-    argv[1] = argv[0];
-    return rb_append_int8(argc-1, argv+1, self);
+    append_args2 args;
+    check_argc_append_2(argc, argv, &args, 8, 0);
+    append_var_int8(1, &args.int0, args.str);
+    append_var_ber(args.argc, args.argv, args.str);
+    return args.str;
 }
 
 static VALUE
 rb_append_ber_int8(int argc, VALUE *argv, VALUE self)
 {
-    check_argc_append_2(argc, 0, 8);
-    rb_append_ber(2, argv, self);
-    argv[1] = argv[0];
-    return rb_append_int8(argc-1, argv+1, self);
+    append_args2 args;
+    check_argc_append_2(argc, argv, &args, 8, 0);
+    append_var_ber(1, &args.int0, args.str);
+    return append_var_int8(args.argc, args.argv, args.str);
 }
 
-static VALUE
-rb_append_ber_int16_le(int argc, VALUE *argv, VALUE self)
-{
-    check_argc_append_2(argc, 0, 16);
-    rb_append_ber(2, argv, self);
-    argv[1] = argv[0];
-    return rb_append_int16_le(argc-1, argv+1, self);
+#define append_int_ber(bits, end) \
+static VALUE                      \
+rb_append_int##bits##_ber_##end(int argc, VALUE *argv, VALUE self) \
+{                                 \
+    append_args2 args;            \
+    check_argc_append_2(argc, argv, &args, bits, 0);       \
+    append_var_int##bits##_##end(1, &args.int0, args.str); \
+    append_var_ber(args.argc, args.argv, args.str);        \
+    return args.str;              \
+}                                 \
+static VALUE                      \
+rb_append_ber_int##bits##_##end(int argc, VALUE *argv, VALUE self) \
+{                                 \
+    append_args2 args;            \
+    check_argc_append_2(argc, argv, &args, 0, bits); \
+    append_var_ber(1, &args.int0, args.str);         \
+    return append_var_int##bits##_##end(args.argc, args.argv, args.str); \
 }
+append_int_ber(16, le)
+append_int_ber(24, le)
+append_int_ber(32, le)
+append_int_ber(16, be)
+append_int_ber(24, be)
+append_int_ber(32, be)
 
-static VALUE
-rb_append_ber_int16_be(int argc, VALUE *argv, VALUE self)
-{
-    check_argc_append_2(argc, 0, 16);
-    rb_append_ber(2, argv, self);
-    argv[1] = argv[0];
-    return rb_append_int16_be(argc-1, argv+1, self);
+#define append_int_int(bit1, bit2, end) \
+static VALUE                            \
+rb_append_int##bit1##_int##bit2##_##end(int argc, VALUE *argv, VALUE self) \
+{ \
+    append_args2 args; \
+    check_argc_append_2(argc, argv, &args, bit1, bit2); \
+    append_var_int##bit1##_##end(1, &args.int0, args.str); \
+    return append_var_int##bit2##_##end(args.argc, args.argv, args.str); \
 }
-
-static VALUE
-rb_append_ber_int24_le(int argc, VALUE *argv, VALUE self)
-{
-    check_argc_append_2(argc, 0, 24);
-    rb_append_ber(2, argv, self);
-    argv[1] = argv[0];
-    return rb_append_int24_le(argc-1, argv+1, self);
-}
-
-static VALUE
-rb_append_ber_int24_be(int argc, VALUE *argv, VALUE self)
-{
-    check_argc_append_2(argc, 0, 24);
-    rb_append_ber(2, argv, self);
-    argv[1] = argv[0];
-    return rb_append_int24_be(argc-1, argv+1, self);
-}
-
-static VALUE
-rb_append_ber_int32_le(int argc, VALUE *argv, VALUE self)
-{
-    check_argc_append_2(argc, 0, 32);
-    rb_append_ber(2, argv, self);
-    argv[1] = argv[0];
-    return rb_append_int32_le(argc-1, argv+1, self);
-}
-
-static VALUE
-rb_append_ber_int32_be(int argc, VALUE *argv, VALUE self)
-{
-    check_argc_append_2(argc, 0, 32);
-    rb_append_ber(2, argv, self);
-    argv[1] = argv[0];
-    return rb_append_int32_be(argc-1, argv+1, self);
-}
-
-
+append_int_int(8, 16, le)
+append_int_int(8, 24, le)
+append_int_int(8, 32, le)
+append_int_int(16, 8, le)
+append_int_int(16, 24, le)
+append_int_int(16, 32, le)
+append_int_int(24, 8, le)
+append_int_int(24, 16, le)
+append_int_int(24, 32, le)
+append_int_int(32, 8, le)
+append_int_int(32, 16, le)
+append_int_int(32, 24, le)
+append_int_int(8, 16, be)
+append_int_int(8, 24, be)
+append_int_int(8, 32, be)
+append_int_int(16, 8, be)
+append_int_int(16, 24, be)
+append_int_int(16, 32, be)
+append_int_int(24, 8, be)
+append_int_int(24, 16, be)
+append_int_int(24, 32, be)
+append_int_int(32, 8, be)
+append_int_int(32, 16, be)
+append_int_int(32, 24, be)
 /** APPEND COMPLEX END **/
 
 void

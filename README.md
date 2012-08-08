@@ -81,17 +81,29 @@ Or install it yourself as:
   BinUtils.slice_ber!(str) == (v=str.unpack('w'); i=[v].pack('w').bytesize; str.slice!(0,i); v)
 
   ints = [i1, i2, ..., in]
-  BinUtils.append_int8!(str, *ints) # str << [*ints].pack('C*')
-  BinUtils.append_int16_le!(str, *ints) # str << [*ints].pack('v*')
-  BinUtils.append_int32_le!(str, *ints) # str << [*ints].pack('V*')
-  BinUtils.append_int64_le!(str, *ints) # str << [*ints].pack('Q<*')
+  # Append functions can accept vararg
+  BinUtils.append_int8!(str, *ints) # str << ints.pack('C*')
+  BinUtils.append_int16_le!(str, *ints) # str << ints.pack('v*')
+  BinUtils.append_int32_le!(str, *ints) # str << ints.pack('V*')
+  BinUtils.append_int64_le!(str, *ints) # str << ints.pack('Q<*')
+  BinUtils.append_int16_be!(str, *ints) # str << ints.pack('n*')
+  BinUtils.append_int32_be!(str, *ints) # str << ints.pack('N*')
+  BinUtils.append_int64_be!(str, *ints) # str << ints.pack('Q>*')
+  BinUtils.append_ber!(str, *ints) # str << ints.pack('w*')
 
-  BinUtils.append_int16_be!(str, *ints) # str << [*ints].pack('n*')
-  BinUtils.append_int32_be!(str, *ints) # str << [*ints].pack('N*')
-  BinUtils.append_int64_be!(str, *ints) # str << [*ints].pack('Q>*')
+  # Append functions can accept single array
+  BinUtils.append_int8!(str, ints) # str << ints.pack('C*')
+  BinUtils.append_int16_le!(str, ints) # str << ints.pack('v*')
+  BinUtils.append_int32_le!(str, ints) # str << ints.pack('V*')
+  BinUtils.append_int64_le!(str, ints) # str << ints.pack('Q<*')
+  BinUtils.append_int16_be!(str, ints) # str << ints.pack('n*')
+  BinUtils.append_int32_be!(str, ints) # str << ints.pack('N*')
+  BinUtils.append_int64_be!(str, ints) # str << ints.pack('Q>*')
+  BinUtils.append_ber!(str, ints) # str << ints.pack('w*')
 
-  BinUtils.append_ber!(str, *ints) # str << [*ints].pack('w*')
 
+  # Other append functions also accept both vararg or array (but not vararg with arrays)
+  # For simplicity, only vararg is shown in this example
   BinUtils.append_bersize_int8!(str, *ints) # str << [n, *ints].pack('wC*')
   BinUtils.append_bersize_int16_le!(str, *ints) # str << [n*2, *ints].pack('wv*')
   BinUtils.append_bersize_int32_le!(str, *ints) # str << [n*4, *ints].pack('wV*')
@@ -136,6 +148,8 @@ Or install it yourself as:
   BinUtils.append_int32_int8_be!(str, int, *ints)  # str << [int, *ints].pack('NC*')
   BinUtils.append_int32_int16_be!(str, int, *ints) # str << [int, *ints].pack('Nn*')
 
+  # String append functions do not accepts varargs nor array
+  # Only single string is accepted
   BinUtils.append_string!(str, add) # str << [add].pack('a*')
   BinUtils.append_bersize_string!(str, add) # str << [add.bytesize, add].pack('wa*')
   BinUtils.append_int32size_string_le!(str, add) # str << [add.bytesize, add].pack('Va*')

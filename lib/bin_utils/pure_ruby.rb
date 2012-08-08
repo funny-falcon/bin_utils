@@ -280,7 +280,10 @@ module BinUtils
       res
     end
 
+    BINARY = ::Encoding::BINARY
     def append_int8!(str, *ints)
+      str ||= ''.force_encoding(BINARY)
+      ints = ints[0] if ints.size == 1 && Array === ints[0]
       i = 0
       sz = ints.size
       while i < sz
@@ -291,6 +294,8 @@ module BinUtils
     end
 
     def append_int16_le!(str, *ints)
+      str ||= ''.force_encoding(BINARY)
+      ints = ints[0] if ints.size == 1 && Array === ints[0]
       i = 0
       sz = ints.size
       while i < sz
@@ -302,6 +307,8 @@ module BinUtils
     end
 
     def append_int24_le!(str, *ints)
+      str ||= ''.force_encoding(BINARY)
+      ints = ints[0] if ints.size == 1 && Array === ints[0]
       i = 0
       sz = ints.size
       while i < sz
@@ -314,6 +321,8 @@ module BinUtils
     end
 
     def append_int32_le!(str, *ints)
+      str ||= ''.force_encoding(BINARY)
+      ints = ints[0] if ints.size == 1 && Array === ints[0]
       i = 0
       sz = ints.size
       while i < sz
@@ -326,6 +335,8 @@ module BinUtils
     end
 
     def append_int40_le!(str, *ints)
+      str ||= ''.force_encoding(BINARY)
+      ints = ints[0] if ints.size == 1 && Array === ints[0]
       i = 0
       sz = ints.size
       while i < sz
@@ -339,6 +350,8 @@ module BinUtils
     end
 
     def append_int48_le!(str, *ints)
+      str ||= ''.force_encoding(BINARY)
+      ints = ints[0] if ints.size == 1 && Array === ints[0]
       i = 0
       sz = ints.size
       while i < sz
@@ -350,6 +363,8 @@ module BinUtils
     end
 
     def append_int56_le!(str, *ints)
+      str ||= ''.force_encoding(BINARY)
+      ints = ints[0] if ints.size == 1 && Array === ints[0]
       i = 0
       sz = ints.size
       while i < sz
@@ -361,6 +376,8 @@ module BinUtils
     end
 
     def append_int64_le!(str, *ints)
+      str ||= ''.force_encoding(BINARY)
+      ints = ints[0] if ints.size == 1 && Array === ints[0]
       i = 0
       sz = ints.size
       while i < sz
@@ -372,6 +389,8 @@ module BinUtils
     end
 
     def append_int16_be!(str, *ints)
+      str ||= ''.force_encoding(BINARY)
+      ints = ints[0] if ints.size == 1 && Array === ints[0]
       i = 0
       sz = ints.size
       while i < sz
@@ -383,6 +402,8 @@ module BinUtils
     end
 
     def append_int24_be!(str, *ints)
+      str ||= ''.force_encoding(BINARY)
+      ints = ints[0] if ints.size == 1 && Array === ints[0]
       i = 0
       sz = ints.size
       while i < sz
@@ -394,6 +415,8 @@ module BinUtils
     end
 
     def append_int32_be!(str, *ints)
+      str ||= ''.force_encoding(BINARY)
+      ints = ints[0] if ints.size == 1 && Array === ints[0]
       i = 0
       sz = ints.size
       while i < sz
@@ -406,6 +429,8 @@ module BinUtils
     end
 
     def append_int40_be!(str, *ints)
+      str ||= ''.force_encoding(BINARY)
+      ints = ints[0] if ints.size == 1 && Array === ints[0]
       i = 0
       sz = ints.size
       while i < sz
@@ -419,6 +444,8 @@ module BinUtils
     end
 
     def append_int48_be!(str, *ints)
+      str ||= ''.force_encoding(BINARY)
+      ints = ints[0] if ints.size == 1 && Array === ints[0]
       i = 0
       sz = ints.size
       while i < sz
@@ -430,6 +457,8 @@ module BinUtils
     end
 
     def append_int56_be!(str, *ints)
+      str ||= ''.force_encoding(BINARY)
+      ints = ints[0] if ints.size == 1 && Array === ints[0]
       i = 0
       sz = ints.size
       while i < sz
@@ -441,6 +470,8 @@ module BinUtils
     end
 
     def append_int64_be!(str, *ints)
+      str ||= ''.force_encoding(BINARY)
+      ints = ints[0] if ints.size == 1 && Array === ints[0]
       i = 0
       sz = ints.size
       while i < sz
@@ -452,162 +483,224 @@ module BinUtils
     end
 
     def append_bersize_int8!(str, *ints)
+      str ||= ''.force_encoding(BINARY)
+      ints = ints[0] if ints.size == 1 && Array === ints[0]
       append_ber!(str, ints.size)
       append_int8!(str, *ints)
     end
 
     def append_bersize_int16_le!(str, *ints)
+      str ||= ''.force_encoding(BINARY)
+      ints = ints[0] if ints.size == 1 && Array === ints[0]
       append_ber!(str, ints.size * 2)
       append_int16_le!(str, *ints)
     end
 
     def append_bersize_int24_le!(str, *ints)
+      str ||= ''.force_encoding(BINARY)
+      ints = ints[0] if ints.size == 1 && Array === ints[0]
       append_ber!(str, ints.size * 3)
       append_int24_le!(str, *ints)
     end
 
     def append_bersize_int32_le!(str, *ints)
+      str ||= ''.force_encoding(BINARY)
+      ints = ints[0] if ints.size == 1 && Array === ints[0]
       append_ber!(str, ints.size * 4)
       append_int32_le!(str, *ints)
     end
 
     def append_bersize_int40_le!(str, *ints)
+      str ||= ''.force_encoding(BINARY)
+      ints = ints[0] if ints.size == 1 && Array === ints[0]
       append_ber!(str, ints.size * 5)
       append_int40_le!(str, *ints)
     end
 
     def append_bersize_int48_le!(str, *ints)
+      str ||= ''.force_encoding(BINARY)
+      ints = ints[0] if ints.size == 1 && Array === ints[0]
       append_ber!(str, ints.size * 6)
       append_int48_le!(str, *ints)
     end
 
     def append_bersize_int56_le!(str, *ints)
+      str ||= ''.force_encoding(BINARY)
+      ints = ints[0] if ints.size == 1 && Array === ints[0]
       append_ber!(str, ints.size * 7)
       append_int56_le!(str, *ints)
     end
 
     def append_bersize_int64_le!(str, *ints)
+      str ||= ''.force_encoding(BINARY)
+      ints = ints[0] if ints.size == 1 && Array === ints[0]
       append_ber!(str, ints.size * 8)
       append_int64_le!(str, *ints)
     end
 
     def append_bersize_int16_be!(str, *ints)
+      str ||= ''.force_encoding(BINARY)
+      ints = ints[0] if ints.size == 1 && Array === ints[0]
       append_ber!(str, ints.size * 2)
       append_int16_be!(str, *ints)
     end
 
     def append_bersize_int24_be!(str, *ints)
+      str ||= ''.force_encoding(BINARY)
+      ints = ints[0] if ints.size == 1 && Array === ints[0]
       append_ber!(str, ints.size * 3)
       append_int24_be!(str, *ints)
     end
 
     def append_bersize_int32_be!(str, *ints)
+      str ||= ''.force_encoding(BINARY)
+      ints = ints[0] if ints.size == 1 && Array === ints[0]
       append_ber!(str, ints.size * 4)
       append_int32_be!(str, *ints)
     end
 
     def append_bersize_int40_be!(str, *ints)
+      str ||= ''.force_encoding(BINARY)
+      ints = ints[0] if ints.size == 1 && Array === ints[0]
       append_ber!(str, ints.size * 5)
       append_int40_be!(str, *ints)
     end
 
     def append_bersize_int48_be!(str, *ints)
+      str ||= ''.force_encoding(BINARY)
+      ints = ints[0] if ints.size == 1 && Array === ints[0]
       append_ber!(str, ints.size * 6)
       append_int48_be!(str, *ints)
     end
 
     def append_bersize_int56_be!(str, *ints)
+      str ||= ''.force_encoding(BINARY)
+      ints = ints[0] if ints.size == 1 && Array === ints[0]
       append_ber!(str, ints.size * 7)
       append_int56_be!(str, *ints)
     end
 
     def append_bersize_int64_be!(str, *ints)
+      str ||= ''.force_encoding(BINARY)
+      ints = ints[0] if ints.size == 1 && Array === ints[0]
       append_ber!(str, ints.size * 8)
       append_int64_be!(str, *ints)
     end
 
     def append_int32size_int8_le!(str, *ints)
+      str ||= ''.force_encoding(BINARY)
+      ints = ints[0] if ints.size == 1 && Array === ints[0]
       append_int32_le!(str, ints.size)
       append_int8!(str, *ints)
     end
 
     def append_int32size_int16_le!(str, *ints)
+      str ||= ''.force_encoding(BINARY)
+      ints = ints[0] if ints.size == 1 && Array === ints[0]
       append_int32_le!(str, ints.size * 2)
       append_int16_le!(str, *ints)
     end
 
     def append_int32size_int24_le!(str, *ints)
+      str ||= ''.force_encoding(BINARY)
+      ints = ints[0] if ints.size == 1 && Array === ints[0]
       append_int32_le!(str, ints.size * 3)
       append_int24_le!(str, *ints)
     end
 
     def append_int32size_int32_le!(str, *ints)
+      str ||= ''.force_encoding(BINARY)
+      ints = ints[0] if ints.size == 1 && Array === ints[0]
       append_int32_le!(str, ints.size * 4)
       append_int32_le!(str, *ints)
     end
 
     def append_int32size_int40_le!(str, *ints)
+      str ||= ''.force_encoding(BINARY)
+      ints = ints[0] if ints.size == 1 && Array === ints[0]
       append_int32_le!(str, ints.size * 5)
       append_int40_le!(str, *ints)
     end
 
     def append_int32size_int48_le!(str, *ints)
+      str ||= ''.force_encoding(BINARY)
+      ints = ints[0] if ints.size == 1 && Array === ints[0]
       append_int32_le!(str, ints.size * 6)
       append_int48_le!(str, *ints)
     end
 
     def append_int32size_int56_le!(str, *ints)
+      str ||= ''.force_encoding(BINARY)
+      ints = ints[0] if ints.size == 1 && Array === ints[0]
       append_int32_le!(str, ints.size * 7)
       append_int56_le!(str, *ints)
     end
 
     def append_int32size_int64_le!(str, *ints)
+      str ||= ''.force_encoding(BINARY)
+      ints = ints[0] if ints.size == 1 && Array === ints[0]
       append_int32_le!(str, ints.size * 8)
       append_int64_le!(str, *ints)
     end
 
     def append_int32size_int8_be!(str, *ints)
+      str ||= ''.force_encoding(BINARY)
+      ints = ints[0] if ints.size == 1 && Array === ints[0]
       append_int32_be!(str, ints.size)
       append_int8!(str, *ints)
     end
 
     def append_int32size_int16_be!(str, *ints)
+      str ||= ''.force_encoding(BINARY)
+      ints = ints[0] if ints.size == 1 && Array === ints[0]
       append_int32_be!(str, ints.size * 2)
       append_int16_be!(str, *ints)
     end
 
     def append_int32size_int24_be!(str, *ints)
+      str ||= ''.force_encoding(BINARY)
+      ints = ints[0] if ints.size == 1 && Array === ints[0]
       append_int32_be!(str, ints.size * 3)
       append_int24_be!(str, *ints)
     end
 
     def append_int32size_int32_be!(str, *ints)
+      str ||= ''.force_encoding(BINARY)
+      ints = ints[0] if ints.size == 1 && Array === ints[0]
       append_int32_be!(str, ints.size * 4)
       append_int32_be!(str, *ints)
     end
 
     def append_int32size_int40_be!(str, *ints)
+      str ||= ''.force_encoding(BINARY)
+      ints = ints[0] if ints.size == 1 && Array === ints[0]
       append_int32_be!(str, ints.size * 5)
       append_int40_be!(str, *ints)
     end
 
     def append_int32size_int48_be!(str, *ints)
+      str ||= ''.force_encoding(BINARY)
+      ints = ints[0] if ints.size == 1 && Array === ints[0]
       append_int32_be!(str, ints.size * 6)
       append_int48_be!(str, *ints)
     end
 
     def append_int32size_int56_be!(str, *ints)
+      str ||= ''.force_encoding(BINARY)
+      ints = ints[0] if ints.size == 1 && Array === ints[0]
       append_int32_be!(str, ints.size * 7)
       append_int56_be!(str, *ints)
     end
 
     def append_int32size_int64_be!(str, *ints)
+      str ||= ''.force_encoding(BINARY)
+      ints = ints[0] if ints.size == 1 && Array === ints[0]
       append_int32_be!(str, ints.size * 8)
       append_int64_be!(str, *ints)
     end
 
-    BINARY = ::Encoding::BINARY
     def append_string!(data, str)
+      data ||= ''.force_encoding(BINARY)
       data << str.dup.force_encoding(BINARY)
     end
 
@@ -615,14 +708,17 @@ module BinUtils
     INT32LE_STRING = "Va*".freeze
     INT32BE_STRING = "Na*".freeze
     def append_bersize_string!(data, str)
+      data ||= ''.force_encoding(BINARY)
       data << [str.bytesize, str].pack(BER_STRING)
     end
 
     def append_int32size_string_le!(data, str)
+      data ||= ''.force_encoding(BINARY)
       data << [str.bytesize, str].pack(INT32LE_STRING)
     end
 
     def append_int32size_string_be!(data, str)
+      data ||= ''.force_encoding(BINARY)
       data << [str.bytesize, str].pack(INT32BE_STRING)
     end
 
@@ -630,6 +726,8 @@ module BinUtils
     INT32LE_BER = 'Vw'
     INT32BE_BER = 'Nw'
     def append_ber!(data, *ints)
+      data ||= ''.force_encoding(BINARY)
+      ints = ints[0] if ints.size == 1 && Array === ints[0]
       if ints.size == 1 && ints[0] < 128
         data << ints[0]
       else
@@ -638,18 +736,24 @@ module BinUtils
     end
 
     def append_bersize_ber!(data, *ints)
+      data ||= ''.force_encoding(BINARY)
+      ints = ints[0] if ints.size == 1 && Array === ints[0]
       bers = ints.pack(BER)
       append_ber!(data, bers.size)
       data << bers
     end
 
     def append_int32size_ber_le!(data, *ints)
+      data ||= ''.force_encoding(BINARY)
+      ints = ints[0] if ints.size == 1 && Array === ints[0]
       bers = ints.pack(BER)
       append_int32_le!(data, bers.size)
       data << bers
     end
 
     def append_int32size_ber_be!(data, *ints)
+      data ||= ''.force_encoding(BINARY)
+      ints = ints[0] if ints.size == 1 && Array === ints[0]
       bers = ints.pack(BER)
       append_int32_be!(data, bers.size)
       data << bers
@@ -658,41 +762,57 @@ module BinUtils
     # complex
     
     def append_int8_ber!(data, int1, *ints)
+      data ||= ''.force_encoding(BINARY)
+      ints = ints[0] if ints.size == 1 && Array === ints[0]
       data << (int1 & 255)
       append_ber!(data, *ints)
     end
 
     def append_int8_int16_le!(data, int1, *ints)
+      data ||= ''.force_encoding(BINARY)
+      ints = ints[0] if ints.size == 1 && Array === ints[0]
       data << (int1 & 255)
       append_int16_le!(data, *ints)
     end
 
     def append_int8_int24_le!(data, int1, *ints)
+      data ||= ''.force_encoding(BINARY)
+      ints = ints[0] if ints.size == 1 && Array === ints[0]
       data << (int1 & 255)
       append_int24_le!(data, *ints)
     end
 
     def append_int8_int32_le!(data, int1, *ints)
+      data ||= ''.force_encoding(BINARY)
+      ints = ints[0] if ints.size == 1 && Array === ints[0]
       data << (int1 & 255)
       append_int32_le!(data, *ints)
     end
-    
+
     def append_int16_ber_le!(data, int1, *ints)
+      data ||= ''.force_encoding(BINARY)
+      ints = ints[0] if ints.size == 1 && Array === ints[0]
       append_int16_le!(data, int1)
       append_ber!(data, *ints)
     end
 
     def append_int16_int8_le!(data, int1, *ints)
+      data ||= ''.force_encoding(BINARY)
+      ints = ints[0] if ints.size == 1 && Array === ints[0]
       append_int16_le!(data, int1)
       append_int8!(data, *ints)
     end
 
     def append_int16_int24_le!(data, int1, *ints)
+      data ||= ''.force_encoding(BINARY)
+      ints = ints[0] if ints.size == 1 && Array === ints[0]
       append_int16_le!(data, int1)
       append_int24_le!(data, *ints)
     end
 
     def append_int16_int32_le!(data, int1, *ints)
+      data ||= ''.force_encoding(BINARY)
+      ints = ints[0] if ints.size == 1 && Array === ints[0]
       append_int16_le!(data, int1)
       append_int32_le!(data, *ints)
     end
@@ -703,151 +823,211 @@ module BinUtils
     end
 
     def append_int24_int8_le!(data, int1, *ints)
+      data ||= ''.force_encoding(BINARY)
+      ints = ints[0] if ints.size == 1 && Array === ints[0]
       append_int24_le!(data, int1)
       append_int8!(data, *ints)
     end
 
     def append_int24_int16_le!(data, int1, *ints)
+      data ||= ''.force_encoding(BINARY)
+      ints = ints[0] if ints.size == 1 && Array === ints[0]
       append_int24_le!(data, int1)
       append_int16_le!(data, *ints)
     end
 
     def append_int24_int32_le!(data, int1, *ints)
+      data ||= ''.force_encoding(BINARY)
+      ints = ints[0] if ints.size == 1 && Array === ints[0]
       append_int24_le!(data, int1)
       append_int32_le!(data, *ints)
     end
-    
+
     def append_int32_ber_le!(data, int1, *ints)
+      data ||= ''.force_encoding(BINARY)
+      ints = ints[0] if ints.size == 1 && Array === ints[0]
       append_int32_le!(data, int1)
       append_ber!(data, *ints)
     end
 
     def append_int32_int8_le!(data, int1, *ints)
+      data ||= ''.force_encoding(BINARY)
+      ints = ints[0] if ints.size == 1 && Array === ints[0]
       append_int32_le!(data, int1)
       append_int8!(data, *ints)
     end
 
     def append_int32_int16_le!(data, int1, *ints)
+      data ||= ''.force_encoding(BINARY)
+      ints = ints[0] if ints.size == 1 && Array === ints[0]
       append_int32_le!(data, int1)
       append_int16_le!(data, *ints)
     end
 
     def append_int32_int24_le!(data, int1, *ints)
+      data ||= ''.force_encoding(BINARY)
+      ints = ints[0] if ints.size == 1 && Array === ints[0]
       append_int32_le!(data, int1)
       append_int24_le!(data, *ints)
     end
 
     def append_int8_int16_be!(data, int1, *ints)
+      data ||= ''.force_encoding(BINARY)
+      ints = ints[0] if ints.size == 1 && Array === ints[0]
       data << (int1 & 255)
       append_int16_be!(data, *ints)
     end
 
     def append_int8_int24_be!(data, int1, *ints)
+      data ||= ''.force_encoding(BINARY)
+      ints = ints[0] if ints.size == 1 && Array === ints[0]
       data << (int1 & 255)
       append_int24_be!(data, *ints)
     end
 
     def append_int8_int32_be!(data, int1, *ints)
+      data ||= ''.force_encoding(BINARY)
+      ints = ints[0] if ints.size == 1 && Array === ints[0]
       data << (int1 & 255)
       append_int32_be!(data, *ints)
     end
-    
+
     def append_int16_ber_be!(data, int1, *ints)
+      data ||= ''.force_encoding(BINARY)
+      ints = ints[0] if ints.size == 1 && Array === ints[0]
       append_int16_be!(data, int1)
       append_ber!(data, *ints)
     end
 
     def append_int16_int8_be!(data, int1, *ints)
+      data ||= ''.force_encoding(BINARY)
+      ints = ints[0] if ints.size == 1 && Array === ints[0]
       append_int16_be!(data, int1)
       append_int8!(data, *ints)
     end
 
     def append_int16_int24_be!(data, int1, *ints)
+      data ||= ''.force_encoding(BINARY)
+      ints = ints[0] if ints.size == 1 && Array === ints[0]
       append_int16_be!(data, int1)
       append_int24_be!(data, *ints)
     end
 
     def append_int16_int32_be!(data, int1, *ints)
+      data ||= ''.force_encoding(BINARY)
+      ints = ints[0] if ints.size == 1 && Array === ints[0]
       append_int16_be!(data, int1)
       append_int32_be!(data, *ints)
     end
-    
+
     def append_int24_ber_be!(data, int1, *ints)
+      data ||= ''.force_encoding(BINARY)
+      ints = ints[0] if ints.size == 1 && Array === ints[0]
       append_int24_be!(data, int1)
       append_ber!(data, *ints)
     end
 
     def append_int24_int8_be!(data, int1, *ints)
+      data ||= ''.force_encoding(BINARY)
+      ints = ints[0] if ints.size == 1 && Array === ints[0]
       append_int24_be!(data, int1)
       append_int8!(data, *ints)
     end
 
     def append_int24_int16_be!(data, int1, *ints)
+      data ||= ''.force_encoding(BINARY)
+      ints = ints[0] if ints.size == 1 && Array === ints[0]
       append_int24_be!(data, int1)
       append_int16_be!(data, *ints)
     end
 
     def append_int24_int32_be!(data, int1, *ints)
+      data ||= ''.force_encoding(BINARY)
+      ints = ints[0] if ints.size == 1 && Array === ints[0]
       append_int24_be!(data, int1)
       append_int32_be!(data, *ints)
     end
-    
+
     def append_int32_ber_be!(data, int1, *ints)
+      data ||= ''.force_encoding(BINARY)
+      ints = ints[0] if ints.size == 1 && Array === ints[0]
       append_int32_be!(data, int1)
       append_ber!(data, *ints)
     end
 
     def append_int32_int8_be!(data, int1, *ints)
+      data ||= ''.force_encoding(BINARY)
+      ints = ints[0] if ints.size == 1 && Array === ints[0]
       append_int32_be!(data, int1)
       append_int8!(data, *ints)
     end
 
     def append_int32_int16_be!(data, int1, *ints)
+      data ||= ''.force_encoding(BINARY)
+      ints = ints[0] if ints.size == 1 && Array === ints[0]
       append_int32_be!(data, int1)
       append_int16_be!(data, *ints)
     end
 
     def append_int32_int24_be!(data, int1, *ints)
+      data ||= ''.force_encoding(BINARY)
+      ints = ints[0] if ints.size == 1 && Array === ints[0]
       append_int32_be!(data, int1)
       append_int24_be!(data, *ints)
     end
 
     def append_ber_int8!(data, int1, *ints)
+      data ||= ''.force_encoding(BINARY)
+      ints = ints[0] if ints.size == 1 && Array === ints[0]
       append_ber!(data, int1)
       append_int8!(data, *ints)
     end
 
     def append_ber_int16_le!(data, int1, *ints)
+      data ||= ''.force_encoding(BINARY)
+      ints = ints[0] if ints.size == 1 && Array === ints[0]
       append_ber!(data, int1)
       append_int16_le!(data, *ints)
     end
 
     def append_ber_int24_le!(data, int1, *ints)
+      data ||= ''.force_encoding(BINARY)
+      ints = ints[0] if ints.size == 1 && Array === ints[0]
       append_ber!(data, int1)
       append_int24_le!(data, *ints)
     end
 
     def append_ber_int32_le!(data, int1, *ints)
+      data ||= ''.force_encoding(BINARY)
+      ints = ints[0] if ints.size == 1 && Array === ints[0]
       append_ber!(data, int1)
       append_int32_le!(data, *ints)
     end
 
     def append_ber_int8!(data, int1, *ints)
+      data ||= ''.force_encoding(BINARY)
+      ints = ints[0] if ints.size == 1 && Array === ints[0]
       append_ber!(data, int1)
       append_int8!(data, *ints)
     end
 
     def append_ber_int16_be!(data, int1, *ints)
+      data ||= ''.force_encoding(BINARY)
+      ints = ints[0] if ints.size == 1 && Array === ints[0]
       append_ber!(data, int1)
       append_int16_be!(data, *ints)
     end
 
     def append_ber_int24_be!(data, int1, *ints)
+      data ||= ''.force_encoding(BINARY)
+      ints = ints[0] if ints.size == 1 && Array === ints[0]
       append_ber!(data, int1)
       append_int24_be!(data, *ints)
     end
 
     def append_ber_int32_be!(data, int1, *ints)
+      data ||= ''.force_encoding(BINARY)
+      ints = ints[0] if ints.size == 1 && Array === ints[0]
       append_ber!(data, int1)
       append_int32_be!(data, *ints)
     end
