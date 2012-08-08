@@ -59,6 +59,17 @@ typedef unsigned long long uint64_t;
 
 ID rshft;
 ID band;
+#ifndef HAVE_RB_STR_DROP_BYTES
+/* rubinius has no rb_str_drop_bytes */
+ID aset;
+static VALUE
+rb_str_drop_bytes(VALUE str, long bytes)
+{
+    VALUE args[3] = {INT2FIX(0), INT2FIX(bytes), rb_str_new(0, 0)};
+    rb_funcall2(str, aset, 3, args);
+    return str;
+}
+#endif
 
 static long
 check_size(long i, long strlen, long ilen)
@@ -1589,6 +1600,9 @@ Init_native_bin_utils()
     VALUE mod_native = rb_define_module_under(mod_bin_utils, "Native");
     rshft = rb_intern(">>");
     band = rb_intern("&");
+#ifndef HAVE_RB_STR_DROP_BYTES
+    aset = rb_intern("[]=");
+#endif
 
     rb_define_method(mod_native, "get_ber", rb_get_ber, -1);
     rb_define_method(mod_native, "get_int8", rb_get_int8, -1);
