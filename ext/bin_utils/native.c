@@ -12,11 +12,13 @@ typedef unsigned __int32 uint32_t;
 typedef __int64 int64_t;
 typedef unsigned __int64 uint64_t;
 #else
+#ifndef __int8_t_defined
 typedef char int8_t;
-typedef unsigned char uint8_t;
 typedef short int16_t;
-typedef unsigned short uint16_t;
 typedef int int32_t;
+#endif
+typedef unsigned char uint8_t;
+typedef unsigned short uint16_t;
 typedef unsigned int uint32_t;
 #if SIZEOF_LONG==8
 typedef long int64_t;
@@ -1585,8 +1587,8 @@ Init_native_bin_utils()
 {
     VALUE mod_bin_utils = rb_define_module("BinUtils");
     VALUE mod_native = rb_define_module_under(mod_bin_utils, "Native");
-    CONST_ID(rshft, ">>");
-    CONST_ID(band, "&");
+    rshft = rb_intern(">>");
+    band = rb_intern("&");
 
     rb_define_method(mod_native, "get_ber", rb_get_ber, -1);
     rb_define_method(mod_native, "get_int8", rb_get_int8, -1);
