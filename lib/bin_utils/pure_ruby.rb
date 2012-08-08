@@ -6,8 +6,8 @@ end
 
 module BinUtils
   # Pure Ruby implementation of bin utils.
-  # It is provided mostly as reference implementation, but JIT enabled ruby implementations
-  # (such as jruby and rubinius) could benefit from it.
+  # It is provided just reference implementation, so that I could write tests before writting
+  # native code. You should not expect performance from it.
   module PureRuby
     extend self
     INT32_INT32_LE = 'VV'.freeze
