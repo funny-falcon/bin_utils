@@ -8,7 +8,7 @@ Gem::Specification.new do |gem|
   gem.summary       = %q{Faster alternative to String#unpack and Array#unpack, though not as complete as those methods}
   gem.homepage      = "https://github.com/funny-falcon/bin_utils"
 
-  gem.files         = Dir['ext/**/*'].grep(/\.(rb|c)$/) +
+  gem.files         = Dir['ext/**/*'].grep(/\.(rb|c|jar)$/) +
                       (Dir['lib/**/*'] + Dir['test/**/*']).grep(/\.rb$/)
   gem.test_files    = gem.files.grep(%r{^test/})
   gem.extensions    = ["ext/bin_utils/extconf.rb"]
@@ -17,5 +17,6 @@ Gem::Specification.new do |gem|
 
   gem.required_ruby_version = '>= 1.9.1'
 
+  gem.add_development_dependency 'rake-compiler'
   gem.version       = BinUtils::VERSION
 end

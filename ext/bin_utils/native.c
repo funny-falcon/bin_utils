@@ -76,7 +76,7 @@ check_size(long i, long strlen, long ilen)
 {
     if (i < 0) { i += strlen; }
     if (i > strlen - ilen || i < 0) {
-        rb_raise(rb_eArgError, "index %ld be in range 0..%ld or in range -%ld..-%ld for string of size %ld", i, strlen-ilen, strlen, -ilen, strlen);
+        rb_raise(rb_eArgError, "index %ld should be in range 0..%ld or in range -%ld..-%ld for string of size %ld", i, strlen-ilen, strlen, -ilen, strlen);
     }
     return i;
 }
@@ -105,7 +105,6 @@ get_int16_le(VALUE rstr, VALUE ri)
     long i = NUM2LONG(ri);
     const uint8_t *ptr;
     uint32_t byte0, byte1;
-    int32_t res;
     StringValue(rstr);
     i = check_size(i, RSTRING_LEN(rstr), 2);
     ptr = (const uint8_t*)RSTRING_PTR(rstr);
@@ -492,7 +491,7 @@ get_ber(VALUE rstr, VALUE ri)
     StringValue(rstr);
     len = RSTRING_LEN(rstr);
     i = check_size(i, len, 1);
-    ptr = RSTRING_PTR(rstr) + i;
+    ptr = (const uint8_t*)RSTRING_PTR(rstr) + i;
     return parse_ber(ptr, len, &i);
 }
 
@@ -964,7 +963,7 @@ slice_ber(VALUE rstr, long *i)
     const uint8_t *ptr;
     StringValue(rstr);
     len = RSTRING_LEN(rstr);
-    ptr = RSTRING_PTR(rstr);
+    ptr = (const uint8_t*)RSTRING_PTR(rstr);
     return parse_ber(ptr, len, i);
 }
 
@@ -1594,7 +1593,7 @@ append_int_int(32, 24, be)
 /** APPEND COMPLEX END **/
 
 void
-Init_native_bin_utils()
+Init_bin_utils()
 {
     VALUE mod_bin_utils = rb_define_module("BinUtils");
     VALUE mod_native = rb_define_module_under(mod_bin_utils, "Native");

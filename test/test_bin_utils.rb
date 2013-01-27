@@ -460,7 +460,7 @@ describe 'pure_ruby' do
 end
 
 begin
-  require 'bin_utils/native_bin_utils'
+  require 'bin_utils/bin_utils'
   describe 'native' do
     let(:util){ BinUtils::Native }
     class_eval(&shared_example)

@@ -1,0 +1,638 @@
+package bin_utils;
+
+import static org.jruby.CompatVersion.RUBY1_8;
+import static org.jruby.CompatVersion.RUBY1_9;
+import org.jruby.Ruby;
+import org.jruby.RubyArray;
+import org.jruby.RubyBignum;
+import org.jruby.RubyClass;
+import org.jruby.RubyFixnum;
+import org.jruby.RubyInteger;
+import org.jruby.RubyNumeric;
+import org.jruby.RubyModule;
+import org.jruby.RubyObject;
+import org.jruby.RubyString;
+import org.jruby.util.ByteList;
+import org.jruby.runtime.builtin.IRubyObject;
+import org.jruby.anno.JRubyModule;
+import org.jruby.anno.JRubyMethod;
+import org.jruby.runtime.ThreadContext;
+import java.lang.reflect.Field;
+
+% get_prep = lambda do |len|
+        long res = 0;
+        RubyString str = astr.asString();
+        ByteList byte_list = ((RubyString)str).getByteList();
+        byte[] bytes = byte_list.getUnsafeBytes();
+        int i = RubyNumeric.fix2int(pos);
+        i = checkSize(context, i, byte_list.getRealSize(), <%= len %>);
+        int begin = byte_list.begin() + i;
+% end
+
+% get_method_ex = lambda do |name, &bl|
+%   len = name[/\d+/].to_i / 8
+
+    @JRubyMethod(name = "get_<%= name %>")
+    public static IRubyObject get_<%= name %>(ThreadContext context, IRubyObject self, IRubyObject str)
+    {
+        return get_<%= name %>(context, self, str, RubyFixnum.zero(context.runtime));
+    }
+
+    @JRubyMethod(name = "get_<%= name %>")
+    public static IRubyObject get_<%= name %>(ThreadContext context, IRubyObject self, IRubyObject astr, IRubyObject pos)
+    {
+        <%- get_prep[len] -%>
+        <% bl.call %>
+	return RubyFixnum.newFixnum(context.runtime, res);
+    }
+% end
+
+<%-
+    bytes = lambda do |first, last, signed|
+        r = first < last ? (first..last).to_a : (last..first).to_a.reverse
+        res = r.each.with_index.map{|byte, i|
+            sign = signed && i == r.size - 1
+            shift_s = i > 0 ? " << #{i*8}" : ""
+            byte_s = byte > 0 ? "bytes[begin+#{byte}]" : "bytes[begin]"
+            byte_s = "(0xff & #{byte_s})"  unless sign
+            "#{(i>1 && i%2==0)?"\n              ":""}((long)(#{byte_s})#{shift_s})"
+        }.join(" | ")
+    end
+-%>
+
+% get_method = lambda do |name|
+%   byte = name[/\d+/].to_i / 8
+%   signed = name =~ /^s/
+%   first, last = name =~ /_le$/ ? [0, byte-1] : [byte-1, 0]
+    <% get_method_ex.call name do %>
+        res = <%= bytes[first, last, signed] %>;
+    <% end %>
+% end
+
+% slice_method = lambda do |name|
+%   byte = name[/\d+/].to_i / 8
+%   jname = name.sub(/!$/, '_bang')
+%   gname = name.sub(/!$/, '')
+    @JRubyMethod(name = "slice_<%= name %>", compat = RUBY1_8)
+    public static IRubyObject slice_<%= jname %>(ThreadContext context, IRubyObject self, IRubyObject astr)
+    {
+        RubyString str = astr.asString();
+        IRubyObject res = get_<%= gname %>(context, self, str, RubyFixnum.zero(context.runtime));
+        RubyString nstr;
+        dropBytes(context, str, <%= byte %>);
+        return res;
+    }
+
+    @JRubyMethod(name = "slice_<%= name %>", compat = RUBY1_9)
+    public static IRubyObject slice_<%= jname %>19(ThreadContext context, IRubyObject self, IRubyObject astr)
+    {
+        RubyString str = astr.asString();
+        IRubyObject res = get_<%= gname %>(context, self, str, RubyFixnum.zero(context.runtime));
+        RubyString nstr;
+        dropBytes19(context, str, <%= byte %>);
+        return res;
+    }
+% end
+
+@JRubyModule(name="BinUtils::Native")
+public class JavaUtils {
+    static private int checkSize(ThreadContext context, int i, int strlen, int ilen)
+    {
+        if (i < 0) { i += strlen; }
+        if (i > strlen - ilen || i < 0) {
+            throw context.runtime.newIndexError("index " + i + " should be in range 0.." + (strlen-ilen) +
+                                          " or in range -" + strlen + "..-" + (-ilen) + 
+                                          " for string of size " + strlen);
+        }
+        return i;
+    }
+
+    static private void dropBytes(ThreadContext context, RubyString str, int l)
+    {
+        RubyString nstr = str.makeShared(context.runtime, l, str.getByteList().getRealSize() - l);
+        str.replace(nstr);
+    }
+
+    static private void dropBytes19(ThreadContext context, RubyString str, int l)
+    {
+        RubyString nstr = str.makeShared19(context.runtime, l, str.getByteList().getRealSize() - l);
+        str.replace19(nstr);
+    }
+
+    <% get_method["int8"] %>
+    <% get_method["sint8"] %>
+
+    <% get_method["int16_le"] %>
+    <% get_method["sint16_le"] %>
+    <% get_method["int24_le"] %>
+    <% get_method["sint24_le"] %>
+    <% get_method["int32_le"] %>
+    <% get_method["sint32_le"] %>
+    <% get_method["int40_le"] %>
+    <% get_method["sint40_le"] %>
+    <% get_method["int48_le"] %>
+    <% get_method["sint48_le"] %>
+    <% get_method["int56_le"] %>
+    <% get_method["sint56_le"] %>
+    <% get_method["sint64_le"] %>
+    <% get_method_ex.("int64_le") do %>
+        res = <%= bytes[0, 3, false] %>;
+        long res1 =
+              <%= bytes[4, 7, false] %>;
+        if (res1 >= 0x80000000l) {
+            RubyBignum big = RubyBignum.newBignum(context.runtime, res1);
+            big = (RubyBignum)big.op_lshift(RubyFixnum.newFixnum(context.runtime, 32));
+            return big.op_plus(context, res);
+        }
+        else
+            res += res1 << 32;
+    <% end %>
+
+    <% get_method["int16_be"] %>
+    <% get_method["sint16_be"] %>
+    <% get_method["int24_be"] %>
+    <% get_method["sint24_be"] %>
+    <% get_method["int32_be"] %>
+    <% get_method["sint32_be"] %>
+    <% get_method["int40_be"] %>
+    <% get_method["sint40_be"] %>
+    <% get_method["int48_be"] %>
+    <% get_method["sint48_be"] %>
+    <% get_method["int56_be"] %>
+    <% get_method["sint56_be"] %>
+    <% get_method["sint64_be"] %>
+    <% get_method_ex.("int64_be") do %>
+        res = <%= bytes[7, 4, false] %>;
+        long res1 =
+              <%= bytes[3, 0, false] %>;
+        if (res1 >= 0x80000000l) {
+            RubyBignum big = RubyBignum.newBignum(context.runtime, res1);
+            big = (RubyBignum)big.op_lshift(RubyFixnum.newFixnum(context.runtime, 32));
+            return big.op_plus(context, res);
+        }
+        else
+            res += res1 << 32;
+    <% end %>
+
+    <% slice_method["int8!"] %>
+    <% slice_method["sint8!"] %>
+
+    <% slice_method["int16_le!"] %>
+    <% slice_method["sint16_le!"] %>
+    <% slice_method["int24_le!"] %>
+    <% slice_method["sint24_le!"] %>
+    <% slice_method["int32_le!"] %>
+    <% slice_method["sint32_le!"] %>
+    <% slice_method["int40_le!"] %>
+    <% slice_method["sint40_le!"] %>
+    <% slice_method["int48_le!"] %>
+    <% slice_method["sint48_le!"] %>
+    <% slice_method["int56_le!"] %>
+    <% slice_method["sint56_le!"] %>
+    <% slice_method["int64_le!"] %>
+    <% slice_method["sint64_le!"] %>
+
+    <% slice_method["int16_be!"] %>
+    <% slice_method["sint16_be!"] %>
+    <% slice_method["int24_be!"] %>
+    <% slice_method["sint24_be!"] %>
+    <% slice_method["int32_be!"] %>
+    <% slice_method["sint32_be!"] %>
+    <% slice_method["int40_be!"] %>
+    <% slice_method["sint40_be!"] %>
+    <% slice_method["int48_be!"] %>
+    <% slice_method["sint48_be!"] %>
+    <% slice_method["int56_be!"] %>
+    <% slice_method["sint56_be!"] %>
+    <% slice_method["int64_be!"] %>
+    <% slice_method["sint64_be!"] %>
+
+    static private IRubyObject parse_ber(ThreadContext context, byte[] bytes, int[] pos, int last)
+    {
+        long res = 0;
+        int begin = pos[0];
+        for(;;) {
+            if (bytes[begin] >= 0) {
+                pos[0] = begin;
+                if (res >= 0x100000000000000l) {
+                    RubyBignum big = RubyBignum.newBignum(context.runtime, res);
+                    return big.op_plus(context, (long)bytes[begin]);
+                }
+                else {
+                    res += bytes[begin];
+                    return RubyFixnum.newFixnum(context.runtime, res);
+                }
+            } 
+            if (res >= 0x200000000000000l) {
+                throw context.runtime.newArgumentError("BER integer is greater then 2**64, could not parse such big");
+            }
+            res = (res + (bytes[begin] + 128)) * 128;
+            begin++;
+            if (begin >= last) {
+                throw context.runtime.newArgumentError("String unexpectedly finished while parsing BER integer");
+            }
+        }
+    }
+
+    @JRubyMethod(name = "get_ber")
+    static public IRubyObject get_ber(ThreadContext context, IRubyObject self, IRubyObject astr)
+    {
+        return get_ber(context, self, astr, RubyFixnum.zero(context.runtime));
+    }
+
+    @JRubyMethod(name = "get_ber")
+    static public IRubyObject get_ber(ThreadContext context, IRubyObject self, IRubyObject astr, IRubyObject pos)
+    {
+        RubyString str = astr.asString();
+        ByteList byte_list = ((RubyString)str).getByteList();
+        byte[] bytes = byte_list.getUnsafeBytes();
+        int i = RubyNumeric.fix2int(pos);
+        i = checkSize(context, i, byte_list.getRealSize(), 1);
+        int[] beg = {byte_list.begin() + i};
+        return parse_ber(context, bytes, beg, byte_list.begin() + byte_list.getRealSize());
+    }
+
+    @JRubyMethod(name = "slice_ber!")
+    static public IRubyObject slice_ber_bang(ThreadContext context, IRubyObject self, IRubyObject astr)
+    {
+        RubyString str = astr.asString();
+        ByteList byte_list = ((RubyString)str).getByteList();
+        byte[] bytes = byte_list.getUnsafeBytes();
+        int i = checkSize(context, 0, byte_list.getRealSize(), 1);
+        int[] beg = {byte_list.begin() + i};
+        IRubyObject res = parse_ber(context, bytes, beg, byte_list.begin() + byte_list.getRealSize());
+
+        if (context.is19) {
+            dropBytes19(context, str, beg[0] + 1 - byte_list.begin());
+        } else {
+            dropBytes(context, str, beg[0] + 1 - byte_list.begin());
+        }
+        return res;
+    }
+
+% append_bytes_int = lambda do |bits, dir|
+%    offsets = 0.step(bits-1, 8).to_a
+%    offsets.reverse!  if dir == '_be'
+static private void append_int<%= bits %><%= dir %>_int(RubyString str, IRubyObject[] vals, int begin, int len)
+{
+    for(int i = 0; i < len; i++) {
+        IRubyObject arg = vals[begin + i];
+        long v = (arg instanceof RubyBignum) ? RubyBignum.big2ulong((RubyBignum)arg) : RubyNumeric.num2long(arg);
+        byte[] bytes = {
+            <%= offsets.map{|i| "(byte)(v>>#{i})"}.join(', ') %>
+        };
+        str.cat(bytes);
+    }
+}
+% end
+
+    <% append_bytes_int[8, nil] %>
+    <% append_bytes_int[16, '_le'] %>
+    <% append_bytes_int[24, '_le'] %>
+    <% append_bytes_int[32, '_le'] %>
+    <% append_bytes_int[40, '_le'] %>
+    <% append_bytes_int[48, '_le'] %>
+    <% append_bytes_int[56, '_le'] %>
+    <% append_bytes_int[64, '_le'] %>
+
+    <% append_bytes_int[16, '_be'] %>
+    <% append_bytes_int[24, '_be'] %>
+    <% append_bytes_int[32, '_be'] %>
+    <% append_bytes_int[40, '_be'] %>
+    <% append_bytes_int[48, '_be'] %>
+    <% append_bytes_int[56, '_be'] %>
+    <% append_bytes_int[64, '_be'] %>
+    
+    private static void append_ber_int(RubyString str, IRubyObject[] vals, int begin, int len)
+    {
+	for(int i = 0; i < len; i++) {
+	    IRubyObject arg = vals[begin + i];
+	    long v = (arg instanceof RubyBignum) ? RubyBignum.big2ulong((RubyBignum)arg) : RubyNumeric.num2long(arg);
+	    int j = 10;
+	    byte[] bytes = { -128, -128, -128, -128, -128, -128, -128, -128, -128, -128, 0 };
+	    bytes[10] = (byte)(v & 0x7f);
+	    v >>>= 7;
+	    while (v > 0) {
+		j--;
+		bytes[j] += (byte)(v & 0x7f);
+		v >>>= 7;
+	    }
+	    str.cat(bytes, j, 11-j);
+	}
+    }
+
+    private static class AppendArgs
+    {
+        public RubyString str;
+        public int begin;
+        public IRubyObject[] argv;
+    }
+
+    private static class AppendArgs2
+    {
+        public RubyString str;
+        public IRubyObject[] arg1;
+        public int begin;
+        public IRubyObject[] argv;
+    }
+
+    private static AppendArgs checkAppendArgs(ThreadContext context, IRubyObject[] argv, int bits)
+    {
+        AppendArgs args = new AppendArgs();
+        if (argv.length < 1) {
+            throw context.runtime.newArgumentError("accepts at least 1 argument: (string, [*int"+(bits==0?"_ber":bits)+"])");
+        }
+        args.str = argv[0].isNil() ? RubyString.newEmptyString(context.runtime) : argv[0].convertToString();
+        if (argv.length == 2 && (argv[1] instanceof RubyArray)) {
+            args.begin = 0;
+            args.argv = ((RubyArray)argv[1]).toJavaArrayMaybeUnsafe();
+        } else {
+            args.begin = 1;
+            args.argv = argv;
+        }
+        return args;
+    }
+
+    private static AppendArgs2 checkAppendArgs2(ThreadContext context, IRubyObject[] argv, int bits, int bits1)
+    {
+        AppendArgs2 args = new AppendArgs2();
+        if (argv.length < 2) {
+	    throw context.runtime.newArgumentError("accepts at least 2 arguments: (string, int"+
+		    (bits==0?"_ber":bits)+", [*int"+(bits1==0?"_ber":bits)+"])");
+        }
+        args.str = argv[0].isNil() ? RubyString.newEmptyString(context.runtime) : argv[0].convertToString();
+        args.arg1 = new IRubyObject[1];
+        args.arg1[0] = argv[1];
+        if (argv.length == 2 && (argv[2] instanceof RubyArray)) {
+            args.begin = 0;
+            args.argv = ((RubyArray)argv[2]).toJavaArrayMaybeUnsafe();
+        } else {
+            args.begin = 2;
+            args.argv = argv;
+        }
+        return args;
+    }
+
+% append_one = lambda do |bits, dir|
+    @JRubyMethod(name = "append_int<%= bits %><%= dir %>!")
+    static public IRubyObject append_int<%= bits %><%= dir %>_bang(ThreadContext context, IRubyObject self, IRubyObject str, IRubyObject one)
+    {
+	if (str.isNil()) str = RubyString.newEmptyString(context.runtime);
+	IRubyObject[] argv = {one};
+        append_int<%= bits %><%= dir %>_int((RubyString)str, argv, 0, 1);
+        return str;
+    }
+
+    @JRubyMethod(name = "append_int<%= bits %><%= dir %>!")
+    static public IRubyObject append_int<%= bits %><%= dir %>_bang(ThreadContext context, IRubyObject self, IRubyObject str, IRubyObject one, IRubyObject two)
+    {
+	if (str.isNil()) str = RubyString.newEmptyString(context.runtime);
+	IRubyObject[] argv = {one, two};
+        append_int<%= bits %><%= dir %>_int((RubyString)str, argv, 0, 2);
+        return str;
+    }
+
+    @JRubyMethod(name = "append_int<%= bits %><%= dir %>!", rest = true)
+    static public IRubyObject append_int<%= bits %><%= dir %>_bang(ThreadContext context, IRubyObject self, IRubyObject[] argv)
+    {
+        AppendArgs args = checkAppendArgs(context, argv, <%= bits %>);
+        append_int<%= bits %><%= dir %>_int(args.str, args.argv, args.begin, args.argv.length - args.begin);
+        return args.str;
+    }
+% end
+
+    <% append_one[8, nil] %>
+    <% append_one[16, '_le'] %>
+    <% append_one[24, '_le'] %>
+    <% append_one[32, '_le'] %>
+    <% append_one[40, '_le'] %>
+    <% append_one[48, '_le'] %>
+    <% append_one[56, '_le'] %>
+    <% append_one[64, '_le'] %>
+
+    <% append_one[16, '_be'] %>
+    <% append_one[24, '_be'] %>
+    <% append_one[32, '_be'] %>
+    <% append_one[40, '_be'] %>
+    <% append_one[48, '_be'] %>
+    <% append_one[56, '_be'] %>
+    <% append_one[64, '_be'] %>
+
+    @JRubyMethod(name = "append_ber!", rest = true)
+    static public IRubyObject append_ber_bang(ThreadContext context, IRubyObject self, IRubyObject[] argv)
+    {
+        AppendArgs args = checkAppendArgs(context, argv, 0);
+        append_ber_int(args.str, args.argv, args.begin, args.argv.length - args.begin);
+        return args.str;
+    }
+
+% append_two = lambda do |bits1, bits2, dir|
+    @JRubyMethod(name = "append_int<%= bits1 %>_int<%= bits2 %><%= dir %>!")
+    public static IRubyObject append_int<%= bits1 %>_int<%= bits2 %><%= dir %>_bang(ThreadContext context, IRubyObject self, IRubyObject str, IRubyObject one, IRubyObject two)
+    {
+	if (str.isNil()) str = RubyString.newEmptyString(context.runtime);
+	IRubyObject[] argv = {one};
+        append_int<%= bits1 %><%= bits1 == 8 ? '' : dir %>_int((RubyString)str, argv, 0, 1);
+	argv[0] = two;
+        append_int<%= bits2 %><%= bits2 == 8 ? '' : dir %>_int((RubyString)str, argv, 0, 1);
+        return str;
+    }
+
+    @JRubyMethod(name = "append_int<%= bits1 %>_int<%= bits2 %><%= dir %>!", rest = true)
+    public static IRubyObject append_int<%= bits1 %>_int<%= bits2 %><%= dir %>_bang(ThreadContext context, IRubyObject self, IRubyObject[] argv)
+    {
+        AppendArgs2 args = checkAppendArgs2(context, argv, <%= bits1 %>, <%= bits2 %>);
+        append_int<%= bits1 %><%= bits1 == 8 ? '' : dir %>_int(args.str, args.arg1, 0, 1);
+        append_int<%= bits2 %><%= bits2 == 8 ? '' : dir %>_int(args.str, args.argv, args.begin, args.argv.length - args.begin);
+        return args.str;
+    }
+% end
+
+    <% append_two[8, 16, '_le'] %>
+    <% append_two[8, 24, '_le'] %>
+    <% append_two[8, 32, '_le'] %>
+    <% append_two[16, 8, '_le'] %>
+    <% append_two[16, 24, '_le'] %>
+    <% append_two[16, 32, '_le'] %>
+    <% append_two[24, 8, '_le'] %>
+    <% append_two[24, 16, '_le'] %>
+    <% append_two[24, 32, '_le'] %>
+    <% append_two[32, 8, '_le'] %>
+    <% append_two[32, 16, '_le'] %>
+    <% append_two[32, 24, '_le'] %>
+
+    <% append_two[8, 16, '_be'] %>
+    <% append_two[8, 24, '_be'] %>
+    <% append_two[8, 32, '_be'] %>
+    <% append_two[16, 8, '_be'] %>
+    <% append_two[16, 24, '_be'] %>
+    <% append_two[16, 32, '_be'] %>
+    <% append_two[24, 8, '_be'] %>
+    <% append_two[24, 16, '_be'] %>
+    <% append_two[24, 32, '_be'] %>
+    <% append_two[32, 8, '_be'] %>
+    <% append_two[32, 16, '_be'] %>
+    <% append_two[32, 24, '_be'] %>
+
+% append_ber_int = lambda do |bits, dir|
+    @JRubyMethod(name = "append_ber_int<%= bits %><%= dir %>!", rest = true)
+    public static IRubyObject append_ber_int<%= bits %><%= dir %>_bang(ThreadContext context, IRubyObject self, IRubyObject[] argv)
+    {
+        AppendArgs2 args = checkAppendArgs2(context, argv, 0, <%= bits %>);
+        append_ber_int(args.str, args.arg1, 0, 1);
+        append_int<%= bits %><%= dir %>_int(args.str, args.argv, args.begin, args.argv.length - args.begin);
+        return args.str;
+    }
+
+    @JRubyMethod(name = "append_int<%= bits %>_ber<%= dir %>!", rest = true)
+    public static IRubyObject append_int<%= bits %>_ber<%= dir %>_bang(ThreadContext context, IRubyObject self, IRubyObject[] argv)
+    {
+        AppendArgs2 args = checkAppendArgs2(context, argv, <%= bits %>, 0);
+        append_int<%= bits %><%= dir %>_int(args.str, args.arg1, 0, 1);
+        append_ber_int(args.str, args.argv, args.begin, args.argv.length - args.begin);
+        return args.str;
+    }
+% end
+
+    <% append_ber_int[8, nil] %>
+    <% append_ber_int[16, '_le'] %>
+    <% append_ber_int[24, '_le'] %>
+    <% append_ber_int[32, '_le'] %>
+    <% append_ber_int[16, '_be'] %>
+    <% append_ber_int[24, '_be'] %>
+    <% append_ber_int[32, '_be'] %>
+
+% append_bersize_int = lambda do |bits, dir|
+%   byte = bits / 8
+    @JRubyMethod(name = "append_bersize_int<%= bits %><%= dir %>!", rest = true)
+    public static IRubyObject append_bersize_int<%= bits %><%= dir %>_bang(ThreadContext context, IRubyObject self, IRubyObject[] argv)
+    {
+        AppendArgs args = checkAppendArgs(context, argv, <%= bits %>);
+	IRubyObject[] sz = { RubyFixnum.newFixnum(context.runtime, (long)(args.argv.length - args.begin) * <%= byte %>) };
+        append_ber_int(args.str, sz, 0, 1);
+        append_int<%= bits %><%= dir %>_int(args.str, args.argv, args.begin, args.argv.length - args.begin);
+        return args.str;
+    }
+% end
+
+    <% append_bersize_int[8, nil] %>
+    <% append_bersize_int[16, '_le'] %>
+    <% append_bersize_int[24, '_le'] %>
+    <% append_bersize_int[32, '_le'] %>
+    <% append_bersize_int[40, '_le'] %>
+    <% append_bersize_int[48, '_le'] %>
+    <% append_bersize_int[56, '_le'] %>
+    <% append_bersize_int[64, '_le'] %>
+    <% append_bersize_int[16, '_be'] %>
+    <% append_bersize_int[24, '_be'] %>
+    <% append_bersize_int[32, '_be'] %>
+    <% append_bersize_int[40, '_be'] %>
+    <% append_bersize_int[48, '_be'] %>
+    <% append_bersize_int[56, '_be'] %>
+    <% append_bersize_int[64, '_be'] %>
+
+    @JRubyMethod(name = "append_bersize_string!")
+    public static IRubyObject append_bersize_string_bang(ThreadContext context, IRubyObject self, IRubyObject target, IRubyObject tail)
+    {
+	RubyString str = target.isNil() ? RubyString.newEmptyString(context.runtime) : target.asString();
+	RubyString tl = tail.isNil() ? RubyString.newEmptyString(context.runtime) : tail.asString();
+	IRubyObject[] sz = { tl.bytesize() };
+        append_ber_int(str, sz, 0, 1);
+	str.cat(tl.getByteList());
+	return str;
+    }
+
+    @JRubyMethod(name = "append_bersize_ber!", rest = true)
+    public static IRubyObject append_bersize_ber_bang(ThreadContext context, IRubyObject self, IRubyObject[] argv)
+    {
+        AppendArgs args = checkAppendArgs(context, argv, 1);
+	RubyString empty = RubyString.newEmptyString(context.runtime);
+        append_ber_int(empty, args.argv, args.begin, args.argv.length - args.begin);
+	return append_bersize_string_bang(context, self, args.str, empty);
+    }
+
+% append_intsize_ber = lambda do |bitsize, bits, dir|
+%   bytesize = bitsize / 8
+%   bytelist = (0...bytesize).to_a ; bytelist.reverse!  if dir == '_be'
+    @JRubyMethod(name = "append_int<%= bitsize %>size_ber<%= dir %>!", rest = true)
+public static IRubyObject append_int<%= bitsize %>size_ber<%= dir %>_bang(ThreadContext context, IRubyObject self, IRubyObject[] argv)
+    {
+        AppendArgs args = checkAppendArgs(context, argv, 1);
+	int size_pos = args.str.getByteList().getRealSize();
+	byte[] nulls = { <%= ['0'] * bytesize * ", " %> };
+	args.str.cat(nulls);
+	append_ber_int(args.str, args.argv, args.begin, args.argv.length - args.begin);
+	if (args.argv.length > args.begin) {
+	    ByteList bl = args.str.getByteList();
+	    byte[] bytes = bl.getUnsafeBytes();
+	    int begin = bl.begin() + size_pos;
+	    int length = bl.getRealSize() - size_pos - 4;
+	    <%- bytelist.each_with_index do |byte, pos| -%>
+	    bytes[begin+<%= pos %>] = (byte)((length >>> <%= byte * 8 %>) & 0xff);
+	    <%- end -%>
+	}
+	return args.str;
+    }
+% end
+
+% append_intsize_int = lambda do |bitsize, bits, dir|
+%   bytesize = bitsize / 8
+%   bytes = bits / 8
+%   bitsize_dir = bitsize != 8 ? dir : nil
+%   bits_dir = bits != 8 ? dir : nil
+    @JRubyMethod(name = "append_int<%= bitsize %>size_int<%= bits %><%= dir %>!", rest = true)
+    public static IRubyObject append_int<%= bitsize %>size_int<%= bits %><%= dir %>_bang(ThreadContext context, IRubyObject self, IRubyObject[] argv)
+    {
+        AppendArgs args = checkAppendArgs(context, argv, <%= bits %>);
+	IRubyObject[] sz = { RubyFixnum.newFixnum(context.runtime, <%= bytes %> * (long)(args.argv.length - args.begin)) };
+	append_int<%= bitsize %><%= bitsize_dir %>_int(args.str, sz, 0, 1);
+	append_int<%= bits %><%= bits_dir %>_int(args.str, args.argv, args.begin, args.argv.length - args.begin);
+	return args.str;
+    }
+% end
+
+    <% append_intsize_ber[32, 'ber', '_le'] %>
+    <% append_intsize_ber[32, 'ber', '_be'] %>
+    <% append_intsize_int[32, 8, '_le'] %>
+    <% append_intsize_int[32, 16, '_le'] %>
+    <% append_intsize_int[32, 24, '_le'] %>
+    <% append_intsize_int[32, 32, '_le'] %>
+    <% append_intsize_int[32, 40, '_le'] %>
+    <% append_intsize_int[32, 48, '_le'] %>
+    <% append_intsize_int[32, 56, '_le'] %>
+    <% append_intsize_int[32, 64, '_le'] %>
+    <% append_intsize_int[32, 8, '_be'] %>
+    <% append_intsize_int[32, 16, '_be'] %>
+    <% append_intsize_int[32, 24, '_be'] %>
+    <% append_intsize_int[32, 32, '_be'] %>
+    <% append_intsize_int[32, 40, '_be'] %>
+    <% append_intsize_int[32, 48, '_be'] %>
+    <% append_intsize_int[32, 56, '_be'] %>
+    <% append_intsize_int[32, 64, '_be'] %>
+
+% append_intsize_string = lambda do |bits, dir|
+    @JRubyMethod(name = "append_int<%= bits %>size_string<%= dir %>!")
+public static IRubyObject append_int<%= bits %>size_string<%= dir %>_bang(ThreadContext context, IRubyObject self, IRubyObject target, IRubyObject tail)
+    {
+	RubyString str = target.isNil() ? RubyString.newEmptyString(context.runtime) : target.asString();
+	RubyString tl = tail.isNil() ? RubyString.newEmptyString(context.runtime) : tail.asString();
+	IRubyObject[] sz = { tl.bytesize() };
+	append_int<%= bits %><%= dir %>_int(str, sz, 0, 1);
+	str.cat(tl.getByteList());
+	return str;
+    }
+% end
+
+    <% append_intsize_string[32, '_le'] %>
+    <% append_intsize_string[32, '_be'] %>
+
+    @JRubyMethod(name = "append_string!")
+    public static IRubyObject append_string_bang(ThreadContext context, IRubyObject self, IRubyObject target, IRubyObject tail)
+    {
+	RubyString str = target.isNil() ? RubyString.newEmptyString(context.runtime) : target.asString();
+	RubyString tl = tail.isNil() ? RubyString.newEmptyString(context.runtime) : tail.asString();
+	str.cat(tl.getByteList());
+	return str;
+    }
+
+}

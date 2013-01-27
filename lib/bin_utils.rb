@@ -2,12 +2,17 @@ require "bin_utils/version"
 
 module BinUtils
   begin
-    require 'bin_utils/native_bin_utils'
-    extend Native
+    if RUBY_ENGINE == 'jruby'
+      require 'bin_utils/bin_utils.jar'
+    else
+      require 'bin_utils/bin_utils'
+    end
+    extend ::BinUtils::Native
   rescue LoadError
+    raise
     require 'bin_utils/pure_ruby'
     extend PureRuby
-    if RUBY_ENGINE == 'ruby'
+    if RUBY_ENGINE == 'ruby' || RUBY_ENGINE == 'jruby'
       $stderr.puts "Attention: pure ruby version of BinUtils is used"
     end
   end
