@@ -309,16 +309,16 @@ static private void append_int<%= bits %><%= dir %>_int(RubyString str, IRubyObj
     
     private static void append_ber_int(RubyString str, IRubyObject[] vals, int begin, int len)
     {
+        byte[] bytes = new byte[11];
 	for(int i = 0; i < len; i++) {
 	    IRubyObject arg = vals[begin + i];
 	    long v = (arg instanceof RubyBignum) ? RubyBignum.big2ulong((RubyBignum)arg) : RubyNumeric.num2long(arg);
 	    int j = 10;
-	    byte[] bytes = { -128, -128, -128, -128, -128, -128, -128, -128, -128, -128, 0 };
 	    bytes[10] = (byte)(v & 0x7f);
 	    v >>>= 7;
 	    while (v > 0) {
 		j--;
-		bytes[j] += (byte)(v & 0x7f);
+		bytes[j] = (byte)((v & 0x7f) - 128);
 		v >>>= 7;
 	    }
 	    str.cat(bytes, j, 11-j);
