@@ -8,8 +8,8 @@ Gem::Specification.new do |gem|
   gem.summary       = %q{Faster alternative to String#unpack and Array#unpack, though not as complete as those methods}
   gem.homepage      = "https://github.com/funny-falcon/bin_utils"
 
-  gem.files         = Dir['ext/**/*'].grep(/\.(rb|c|jar)$/) +
-                      (Dir['lib/**/*'] + Dir['test/**/*']).grep(/\.rb$/)
+  gem.files         = (Dir['lib/**/*'] + Dir['test/**/*']).grep(/\.rb$/) +
+                      RUBY_ENGINE == 'jruby' ? Dir['ext/**/*'].grep(/\.jar$/) : Dir['ext/**/*'].grep(/\.(rb|c)$/)
   gem.test_files    = gem.files.grep(%r{^test/})
   gem.extensions    = ["ext/bin_utils/extconf.rb"]
   gem.name          = "bin_utils"
