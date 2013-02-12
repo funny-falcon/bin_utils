@@ -273,21 +273,25 @@ public class JavaUtils {
 % append_bytes_int = lambda do |bits, dir|
 %    offsets = 0.step(bits-1, 8).to_a
 %    offsets.reverse!  if dir == '_be'
-static private void append_int<%= bits %><%= dir %>_int(RubyString str, IRubyObject[] vals, int begin, int len)
-{
-    int offset = str.size();
-    str.resize(offset + <%= offsets.size %> * len);
-    ByteList bl = str.getByteList();
-    byte[] bytes = bl.getUnsafeBytes();
-    offset += bl.begin();
-    for (int i = 0; i < len; i++, offset += <%= offsets.size %>) {
-        IRubyObject arg = vals[begin + i];
-        long v = (arg instanceof RubyBignum) ? RubyBignum.big2ulong((RubyBignum)arg) : RubyNumeric.num2long(arg);
+    static private void set_int<%= bits %><%= dir %>_int(byte[] bytes, IRubyObject val, int offset)
+    {
+        long v = (val instanceof RubyBignum) ? RubyBignum.big2ulong((RubyBignum)val) : RubyNumeric.num2long(val);
         <%- offsets.each_with_index do |off, ind| -%>
         bytes[offset + <%= ind %>] = (byte)(v >> <%= off %>);
         <%- end -%>
     }
-}
+
+    static private void append_int<%= bits %><%= dir %>_int(RubyString str, IRubyObject[] vals, int begin, int len)
+    {
+        int offset = str.size();
+        str.resize(offset + <%= offsets.size %> * len);
+        ByteList bl = str.getByteList();
+        byte[] bytes = bl.getUnsafeBytes();
+        offset += bl.begin();
+        for (int i = 0; i < len; i++, offset += <%= offsets.size %>) {
+            set_int<%= bits %><%= dir %>_int(bytes, vals[begin + i], offset);
+        }
+    }
 % end
 
     <% append_bytes_int[8, nil] %>
