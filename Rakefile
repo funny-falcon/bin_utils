@@ -10,7 +10,6 @@ Rake::TestTask.new do |i|
 end
 
 require File.expand_path('../lib/bin_utils/version', __FILE__)
-
 spec = Gem::Specification.new do |gem|
   gem.name          = "bin_utils"
   gem.authors       = ["Sokolov Yura 'funny-falcon'"]
@@ -19,10 +18,14 @@ spec = Gem::Specification.new do |gem|
   gem.summary       = %q{Faster alternative to String#unpack and Array#unpack, though not as complete as those methods}
   gem.homepage      = "https://github.com/funny-falcon/bin_utils"
 
-  gem.files         = (Dir['lib/**/*'] + Dir['test/**/*']).grep(/\.rb$/) +
-                      (RUBY_ENGINE == 'jruby' ? Dir['ext/**/*'].grep(/\.jar$/) : Dir['ext/**/*'].grep(/\.(rb|c)$/))
+  file = FileList["lib/**/*.rb"] + FileList["test/**/*.rb"]
+  if RUBY_ENGINE == 'jruby'
+    gem.files       = file + FileList["ext/**/*.jar"]
+  else
+    gem.extensions  = ["ext/bin_utils/extconf.rb"]
+    gem.files       = file + FileList["ext/**/*.c"]
+  end
   gem.test_files    = gem.files.grep(%r{^test/})
-  gem.extensions    = ["ext/bin_utils/extconf.rb"]  unless RUBY_ENGINE == 'jruby'
   gem.require_paths = ["lib", "ext"]
 
   gem.required_ruby_version = '>= 1.9.1'
@@ -35,24 +38,25 @@ end
 Gem::PackageTask.new(spec) do |pkg|
 end
 
+def precompile(t)
+  puts "PRECOMPILE #{t.name}"
+  require 'erb'
+  result = ERB.new(File.read(t.source), nil, "-%").result
+  File.open(t.name, 'w'){|fl| fl.write result }
+end
+
+rule '.java' => '.java.erb' do |t| precompile(t) end
+rule '.c' => '.c.erb' do |t| precompile(t) end
+
 if RUBY_PLATFORM =~ /java/
-  task :compile => :precompile
+  task :compile => ['ext/bin_utils/JavaUtils.java']
   require 'rake/javaextensiontask'
   Rake::JavaExtensionTask.new("bin_utils", spec) do |ext|
     ext.lib_dir = 'ext/bin_utils'
   end
-  javaf = File.expand_path('../ext/bin_utils/JavaUtils.java', __FILE__)
-  file javaf => ["#{javaf}.erb"] do
-    require 'erb'
-    puts "PRECOMPILE"
-    File.open(javaf, 'w') do |fl|
-      fl.write ERB.new(File.read("#{javaf}.erb"), nil, "-%").result
-    end
-  end
-
-  task :precompile => [javaf]
 else
   require 'rake/extensiontask'
+  task :compile => ['ext/bin_utils/native.c']
   Rake::ExtensionTask.new("bin_utils", spec) do |ext|
     ext.lib_dir = 'ext/bin_utils'
   end
