@@ -31,7 +31,7 @@ spec = Gem::Specification.new do |gem|
   gem.required_ruby_version = '>= 1.9.1'
   gem.platform      = Gem::Platform::RUBY
 
-  gem.add_development_dependency 'rake-compiler'
+  gem.add_development_dependency 'rake-compiler', '~> 0.9'
   gem.version       = BinUtils::VERSION
 end
 
