@@ -57,6 +57,10 @@ typedef unsigned long long uint64_t;
 #define NUM2U64(v) NUM2ULL(v)
 #endif
 
+#ifndef RARRAY_CONST_PTR
+# define RARRAY_CONST_PTR(ar) RARRAY_PTR(ar)
+#endif
+
 ID rshft;
 ID band;
 #ifndef HAVE_RB_STR_DROP_BYTES
@@ -127,7 +131,7 @@ check_argc_append(int argc, VALUE *argv, append_args *args, int bits)
     args->str = RTEST(argv[0]) ? argv[0] : rb_str_new(0, 0);
     if (argc == 2 && TYPE(argv[1]) == T_ARRAY) {
         args->argc = RARRAY_LEN(argv[1]);
-        args->argv = RARRAY_PTR(argv[1]);
+        args->argv = RARRAY_CONST_PTR(argv[1]);
     }
     else {
         args->argc = argc-1;
@@ -145,7 +149,7 @@ check_argc_append_2(int argc, VALUE *argv, append_args2 *args, int bits, int bit
     args->int0 = argv[1];
     if (argc == 3 && TYPE(argv[2]) == T_ARRAY) {
         args->argc = RARRAY_LEN(argv[2]);
-        args->argv = RARRAY_PTR(argv[2]);
+        args->argv = RARRAY_CONST_PTR(argv[2]);
     }
     else {
         args->argc = argc-2;
