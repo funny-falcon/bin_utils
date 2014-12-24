@@ -10,7 +10,6 @@ module BinUtils
     extend ::BinUtils::Native
     include ::BinUtils::Native
   rescue LoadError
-    raise
     require 'bin_utils/pure_ruby'
     extend ::BinUtils::PureRuby
     include ::BinUtils::PureRuby
