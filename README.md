@@ -24,7 +24,7 @@ Or install it yourself as:
 
 ```ruby
   require 'bin_utils'
-  # using Ruby 1.9.3 sintax for some little-endian and big-endian
+  # using Ruby 1.9.3 syntax for some little-endian and big-endian
   BinUtils.get_int8(str) == str.unpack('C')[0]
   BinUtils.get_sint8(str) == str.unpack('c')[0]
   BinUtils.get_int8(str, i) == str[i,1].unpack('C')[0]
